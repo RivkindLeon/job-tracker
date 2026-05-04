@@ -10,7 +10,13 @@ A public project for exploring a product that helps job seekers, especially soft
 Job searching often becomes fragmented across spreadsheets, email threads, CV versions, interview stages, and follow-up reminders.
 
 ## Current status
-Initial idea / exploration.
+Early product definition with a documented product brief and core entities.
 
 ## Repository visibility
 This repository is public.
+
+## Current documents
+- `docs/idea.md` - short product framing
+- `docs/product-brief.md` - users, problems, v0 outcome, entities, and flow
+- `docs/roadmap.md` - phase-based next steps
+- `docs/scope.md` - current boundaries

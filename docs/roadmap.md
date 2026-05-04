@@ -4,8 +4,10 @@
 - create repository
 - capture idea and scope
 - keep exploration lightweight
+- define the first product brief, core entities, and user flow
 
-## Possible next phase
-- define main user flows
-- identify core entities and workflows
-- decide whether to prototype UI, backend model, or both
+## Next phase
+- choose a lightweight frontend architecture
+- prepare a first UI skeleton around applications, stages, and follow-ups
+- seed mock data for applications, companies, contacts, interviews, and reminders
+- validate whether a list-first or board-first layout is the best initial workflow
