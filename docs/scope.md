@@ -4,9 +4,10 @@
 - initial repository setup
 - lightweight product framing
 - simple documentation structure
+- product brief with users, entities, and workflow boundaries
 
 ## Out of scope for now
-- technical architecture
-- framework choice
-- implementation details
+- backend implementation
+- production integrations
 - deep market analysis
+- advanced automation before the first workflow prototype exists
