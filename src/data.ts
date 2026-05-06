@@ -1,0 +1,136 @@
+export type ApplicationStage =
+  | 'Wishlist'
+  | 'Applied'
+  | 'Interviewing'
+  | 'Offer'
+  | 'Closed'
+
+export type FollowUpStatus = 'due-today' | 'this-week' | 'waiting'
+
+export type Application = {
+  id: number
+  company: string
+  role: string
+  stage: ApplicationStage
+  location: string
+  salary: string
+  appliedOn: string
+  nextStep: string
+  resume: string
+  contact: string
+  contactRole: string
+  notes: string
+}
+
+export type FollowUp = {
+  id: number
+  applicationId: number
+  title: string
+  dueLabel: string
+  status: FollowUpStatus
+}
+
+export const stages: ApplicationStage[] = [
+  'Wishlist',
+  'Applied',
+  'Interviewing',
+  'Offer',
+  'Closed',
+]
+
+export const applications: Application[] = [
+  {
+    id: 1,
+    company: 'Northstar Labs',
+    role: 'Frontend Engineer',
+    stage: 'Interviewing',
+    location: 'Remote · EU',
+    salary: '€70k - €85k',
+    appliedOn: '2026-05-01',
+    nextStep: 'Technical interview on Thursday',
+    resume: 'Frontend-focused resume v3',
+    contact: 'Mina Shah',
+    contactRole: 'Recruiter',
+    notes: 'Strong TypeScript focus and a take-home follow-up already scheduled.',
+  },
+  {
+    id: 2,
+    company: 'Orbit Commerce',
+    role: 'Product Engineer',
+    stage: 'Applied',
+    location: 'Berlin / Hybrid',
+    salary: '€65k - €78k',
+    appliedOn: '2026-05-04',
+    nextStep: 'Send a portfolio follow-up if no reply by Friday',
+    resume: 'Product-generalist resume v2',
+    contact: 'Hiring Team',
+    contactRole: 'Careers inbox',
+    notes: 'Good fit for cross-functional work, but the process is still early.',
+  },
+  {
+    id: 3,
+    company: 'Atlas Health',
+    role: 'UI Platform Developer',
+    stage: 'Wishlist',
+    location: 'Remote · UK',
+    salary: '£60k - £72k',
+    appliedOn: 'Not applied yet',
+    nextStep: 'Tailor CV for accessibility and design systems work',
+    resume: 'Needs a healthcare-focused variant',
+    contact: 'Open role',
+    contactRole: 'No contact yet',
+    notes: 'Interesting mission-driven team, but application prep is still pending.',
+  },
+  {
+    id: 4,
+    company: 'Signal Forge',
+    role: 'Senior React Engineer',
+    stage: 'Offer',
+    location: 'Remote · US overlap',
+    salary: '$145k - $160k',
+    appliedOn: '2026-04-18',
+    nextStep: 'Review written offer and compare benefits',
+    resume: 'Senior frontend resume v4',
+    contact: 'Daniel Kim',
+    contactRole: 'Engineering Manager',
+    notes: 'Strong process momentum. Need a compensation comparison before responding.',
+  },
+  {
+    id: 5,
+    company: 'Bright Ledger',
+    role: 'Full Stack Engineer',
+    stage: 'Closed',
+    location: 'Remote · CET',
+    salary: '€58k - €70k',
+    appliedOn: '2026-04-09',
+    nextStep: 'Archive notes and reuse tailored resume snippets elsewhere',
+    resume: 'Full-stack resume v1',
+    contact: 'Amelia Ford',
+    contactRole: 'Talent Partner',
+    notes: 'Closed after the first screen due to backend depth mismatch.',
+  },
+]
+
+export const followUps: FollowUp[] = [
+  {
+    id: 1,
+    applicationId: 1,
+    title: 'Confirm interview availability',
+    dueLabel: 'Today · 18:00',
+    status: 'due-today',
+  },
+  {
+    id: 2,
+    applicationId: 2,
+    title: 'Nudge with portfolio link',
+    dueLabel: 'Friday morning',
+    status: 'this-week',
+  },
+  {
+    id: 3,
+    applicationId: 4,
+    title: 'Prepare offer comparison notes',
+    dueLabel: 'Waiting on benefits PDF',
+    status: 'waiting',
+  },
+]
