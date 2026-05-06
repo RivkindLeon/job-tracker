@@ -5,9 +5,11 @@
 - lightweight product framing
 - simple documentation structure
 - product brief with users, entities, and workflow boundaries
+- a frontend-only app shell using mock data
 
 ## Out of scope for now
-- backend implementation
-- production integrations
+- multi-user collaboration
+- backend APIs or persistence
+- automation around email or calendar systems
 - deep market analysis
 - advanced automation before the first workflow prototype exists

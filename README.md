@@ -10,7 +10,15 @@ A public project for exploring a product that helps job seekers, especially soft
 Job searching often becomes fragmented across spreadsheets, email threads, CV versions, interview stages, and follow-up reminders.
 
 ## Current status
-Early product definition with a documented product brief and core entities.
+First React + TypeScript + Vite app shell with mock application, pipeline, and follow-up data.
+
+## Local development
+```bash
+npm install
+npm run lint
+npm run build
+npm run dev
+```
 
 ## Repository visibility
 This repository is public.
