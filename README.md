@@ -10,7 +10,7 @@ A public project for exploring a product that helps job seekers, especially soft
 Job searching often becomes fragmented across spreadsheets, email threads, CV versions, interview stages, and follow-up reminders.
 
 ## Current status
-First React + TypeScript + Vite app shell with mock application, pipeline, and follow-up data.
+React + TypeScript + Vite app shell with mock application, pipeline, and follow-up data, plus a local application creation flow that can capture the first follow-up.
 
 ## Local development
 ```bash
