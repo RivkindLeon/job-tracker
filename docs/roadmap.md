@@ -8,7 +8,7 @@
 - scaffold the first app shell around local mock data
 
 ## Next phase
-- add local interactions for creating or editing applications
+- add local interactions for editing existing applications and adjusting stages
 - support follow-up scheduling and filtering
 - seed richer mock data for contacts, interviews, and resume variants
 - decide when persistence or a backend is actually needed

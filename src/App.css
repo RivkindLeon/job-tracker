@@ -147,11 +147,91 @@ select {
   color: #cbd5e1;
 }
 
+.application-form,
+.board-grid {
+  margin-top: 20px;
+}
+
+.application-form {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.application-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.application-form-heading h3,
+.application-form-heading p {
+  margin: 0;
+}
+
+.application-form-heading p {
+  margin-top: 8px;
+  color: #94a3b8;
+}
+
+.application-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.application-form-grid label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+}
+
+.application-form-grid input,
+.application-form-grid select,
+.application-form-grid textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.86);
+  color: #f8fafc;
+}
+
+.application-form-grid textarea {
+  resize: vertical;
+}
+
+.application-form-grid input::placeholder,
+.application-form-grid textarea::placeholder {
+  color: #64748b;
+}
+
+.application-form-note {
+  grid-column: 1 / -1;
+}
+
+.primary-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #eff6ff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-action:hover {
+  filter: brightness(1.05);
+}
+
 .board-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 20px;
 }
 
 .stage-column {
@@ -273,7 +353,8 @@ select {
   .workspace,
   .hero,
   .board-grid,
-  .detail-grid {
+  .detail-grid,
+  .application-form-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -286,8 +367,13 @@ select {
 
   .board-panel,
   .detail-panel,
-  .hero {
+  .hero,
+  .application-form {
     padding: 18px;
     border-radius: 20px;
+  }
+
+  .application-form-heading {
+    flex-direction: column;
   }
 }

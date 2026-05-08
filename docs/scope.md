@@ -6,6 +6,7 @@
 - simple documentation structure
 - product brief with users, entities, and workflow boundaries
 - a frontend-only app shell using mock data
+- local state flows for capturing new applications and first follow-ups
 
 ## Out of scope for now
 - multi-user collaboration
