@@ -148,42 +148,56 @@ select {
 }
 
 .application-form,
-.board-grid {
+.board-grid,
+.detail-edit-form {
   margin-top: 20px;
 }
 
-.application-form {
+.application-form,
+.detail-edit-form {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 20px;
   padding: 20px;
   background: rgba(15, 23, 42, 0.58);
 }
 
-.application-form-heading {
+.application-form-heading,
+.detail-edit-form-heading,
+.detail-panel-actions,
+.detail-edit-actions {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.application-form-heading,
+.detail-edit-form-heading {
   margin-bottom: 18px;
 }
 
 .application-form-heading h3,
-.application-form-heading p {
+.application-form-heading p,
+.detail-edit-form-heading h3,
+.detail-edit-form-heading p {
   margin: 0;
 }
 
-.application-form-heading p {
+.application-form-heading p,
+.detail-edit-form-heading p {
   margin-top: 8px;
   color: #94a3b8;
 }
 
-.application-form-grid {
+.application-form-grid,
+.detail-edit-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-.application-form-grid label {
+.application-form-grid label,
+.detail-edit-grid label {
   display: grid;
   gap: 8px;
   font-size: 0.92rem;
@@ -192,7 +206,10 @@ select {
 
 .application-form-grid input,
 .application-form-grid select,
-.application-form-grid textarea {
+.application-form-grid textarea,
+.detail-edit-grid input,
+.detail-edit-grid select,
+.detail-edit-grid textarea {
   width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 14px;
@@ -201,12 +218,15 @@ select {
   color: #f8fafc;
 }
 
-.application-form-grid textarea {
+.application-form-grid textarea,
+.detail-edit-grid textarea {
   resize: vertical;
 }
 
 .application-form-grid input::placeholder,
-.application-form-grid textarea::placeholder {
+.application-form-grid textarea::placeholder,
+.detail-edit-grid input::placeholder,
+.detail-edit-grid textarea::placeholder {
   color: #64748b;
 }
 
@@ -214,17 +234,28 @@ select {
   grid-column: 1 / -1;
 }
 
-.primary-action {
-  border: 0;
+.primary-action,
+.secondary-action {
   border-radius: 999px;
   padding: 12px 18px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #eff6ff;
   font-weight: 700;
   cursor: pointer;
 }
 
-.primary-action:hover {
+.primary-action {
+  border: 0;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #eff6ff;
+}
+
+.secondary-action {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+
+.primary-action:hover,
+.secondary-action:hover {
   filter: brightness(1.05);
 }
 
@@ -275,6 +306,14 @@ select {
 
 .application-card span {
   margin: 6px 0;
+}
+
+.detail-panel-actions {
+  margin-top: 20px;
+}
+
+.detail-edit-actions {
+  justify-content: flex-end;
 }
 
 .detail-grid {
@@ -373,7 +412,10 @@ select {
     border-radius: 20px;
   }
 
-  .application-form-heading {
+  .application-form-heading,
+  .detail-edit-form-heading,
+  .detail-panel-actions,
+  .detail-edit-actions {
     flex-direction: column;
   }
 }

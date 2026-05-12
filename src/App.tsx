@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   applications as initialApplications,
   followUps as initialFollowUps,
@@ -30,6 +30,18 @@ type ApplicationFormState = {
   followUpDueLabel: string
 }
 
+type ApplicationEditState = {
+  company: string
+  role: string
+  stage: ApplicationStage
+  location: string
+  salary: string
+  nextStep: string
+  contact: string
+  contactRole: string
+  notes: string
+}
+
 const defaultFormState: ApplicationFormState = {
   company: '',
   role: '',
@@ -44,15 +56,44 @@ const defaultFormState: ApplicationFormState = {
   followUpDueLabel: '',
 }
 
+function getEditStateFromApplication(application: Application): ApplicationEditState {
+  return {
+    company: application.company,
+    role: application.role,
+    stage: application.stage,
+    location: application.location,
+    salary: application.salary,
+    nextStep: application.nextStep,
+    contact: application.contact,
+    contactRole: application.contactRole,
+    notes: application.notes,
+  }
+}
+
 function App() {
   const [applicationItems, setApplicationItems] = useState(initialApplications)
   const [followUpItems, setFollowUpItems] = useState(initialFollowUps)
   const [selectedApplicationId, setSelectedApplicationId] = useState(initialApplications[0]?.id ?? 0)
   const [formState, setFormState] = useState(defaultFormState)
+  const [isEditingSelectedApplication, setIsEditingSelectedApplication] = useState(false)
+  const [editState, setEditState] = useState<ApplicationEditState>(() =>
+    initialApplications[0] ? getEditStateFromApplication(initialApplications[0]) : getEmptyEditState(),
+  )
 
   const selectedApplication =
     applicationItems.find((application) => application.id === selectedApplicationId) ??
     applicationItems[0]
+
+  useEffect(() => {
+    if (!selectedApplication) {
+      setIsEditingSelectedApplication(false)
+      setEditState(getEmptyEditState())
+      return
+    }
+
+    setIsEditingSelectedApplication(false)
+    setEditState(getEditStateFromApplication(selectedApplication))
+  }, [selectedApplication])
 
   const applicationsByStage = useMemo(
     () =>
@@ -84,6 +125,16 @@ function App() {
     value: ApplicationFormState[Key],
   ) => {
     setFormState((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  const handleEditStateChange = <Key extends keyof ApplicationEditState>(
+    key: Key,
+    value: ApplicationEditState[Key],
+  ) => {
+    setEditState((current) => ({
       ...current,
       [key]: value,
     }))
@@ -130,6 +181,55 @@ function App() {
     }
 
     setFormState(defaultFormState)
+  }
+
+  const handleSaveApplicationEdits = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!selectedApplication) {
+      return
+    }
+
+    setApplicationItems((current) =>
+      current.map((application) => {
+        if (application.id !== selectedApplication.id) {
+          return application
+        }
+
+        const nextStage = editState.stage
+        const nextAppliedOn =
+          application.appliedOn === 'Not applied yet' && nextStage !== 'Wishlist'
+            ? new Date().toISOString().slice(0, 10)
+            : application.appliedOn !== 'Not applied yet' && nextStage === 'Wishlist'
+              ? 'Not applied yet'
+              : application.appliedOn
+
+        return {
+          ...application,
+          company: editState.company.trim(),
+          role: editState.role.trim(),
+          stage: nextStage,
+          location: editState.location.trim() || 'Location to confirm',
+          salary: editState.salary.trim() || 'Compensation not captured yet',
+          appliedOn: nextAppliedOn,
+          nextStep: editState.nextStep.trim() || 'Define the next step for this opportunity',
+          contact: editState.contact.trim() || 'Contact to add',
+          contactRole: editState.contactRole.trim() || 'Role to confirm',
+          notes: editState.notes.trim() || 'No notes added yet.',
+        }
+      }),
+    )
+
+    setIsEditingSelectedApplication(false)
+  }
+
+  const handleCancelEdits = () => {
+    if (!selectedApplication) {
+      return
+    }
+
+    setEditState(getEditStateFromApplication(selectedApplication))
+    setIsEditingSelectedApplication(false)
   }
 
   return (
@@ -312,50 +412,158 @@ function App() {
                 <span className="pill muted">{selectedApplication.stage}</span>
               </div>
 
-              <dl className="detail-grid">
-                <Detail label="Company" value={selectedApplication.company} />
-                <Detail label="Location" value={selectedApplication.location} />
-                <Detail label="Compensation" value={selectedApplication.salary} />
-                <Detail label="Applied on" value={selectedApplication.appliedOn} />
-                <Detail label="Resume used" value={selectedApplication.resume} />
-                <Detail
-                  label="Primary contact"
-                  value={`${selectedApplication.contact} · ${selectedApplication.contactRole}`}
-                />
-              </dl>
-
-              <div className="note-card">
-                <h3>Next step</h3>
-                <p>{selectedApplication.nextStep}</p>
-              </div>
-
-              <div className="note-card">
-                <h3>Application notes</h3>
-                <p>{selectedApplication.notes}</p>
-              </div>
-
-              <div className="follow-up-list">
-                <div className="follow-up-header">
-                  <h3>Follow-ups</h3>
-                  <span>{selectedFollowUps.length}</span>
-                </div>
-
-                {selectedFollowUps.length > 0 ? (
-                  selectedFollowUps.map((followUp) => (
-                    <div key={followUp.id} className="follow-up-item">
-                      <div>
-                        <strong>{followUp.title}</strong>
-                        <p>{followUp.dueLabel}</p>
-                      </div>
-                      <span className={`status-chip ${followUp.status}`}>
-                        {followUpLabels[followUp.status]}
-                      </span>
+              {isEditingSelectedApplication ? (
+                <form className="detail-edit-form" onSubmit={handleSaveApplicationEdits}>
+                  <div className="detail-edit-form-heading">
+                    <div>
+                      <h3>Edit application</h3>
+                      <p>Correct details or move the opportunity to a new stage without leaving the board.</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="empty-state">No follow-ups logged for this application yet.</p>
-                )}
-              </div>
+                    <div className="detail-edit-actions">
+                      <button type="button" className="secondary-action" onClick={handleCancelEdits}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="primary-action">
+                        Save changes
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="detail-edit-grid">
+                    <label>
+                      Company
+                      <input
+                        value={editState.company}
+                        onChange={(event) => handleEditStateChange('company', event.target.value)}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Role
+                      <input
+                        value={editState.role}
+                        onChange={(event) => handleEditStateChange('role', event.target.value)}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Stage
+                      <select
+                        value={editState.stage}
+                        onChange={(event) =>
+                          handleEditStateChange('stage', event.target.value as ApplicationStage)
+                        }
+                      >
+                        {stages.map((stage) => (
+                          <option key={stage} value={stage}>
+                            {stage}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Location
+                      <input
+                        value={editState.location}
+                        onChange={(event) => handleEditStateChange('location', event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Compensation
+                      <input
+                        value={editState.salary}
+                        onChange={(event) => handleEditStateChange('salary', event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Next step
+                      <input
+                        value={editState.nextStep}
+                        onChange={(event) => handleEditStateChange('nextStep', event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Contact
+                      <input
+                        value={editState.contact}
+                        onChange={(event) => handleEditStateChange('contact', event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Contact role
+                      <input
+                        value={editState.contactRole}
+                        onChange={(event) => handleEditStateChange('contactRole', event.target.value)}
+                      />
+                    </label>
+                    <label className="application-form-note">
+                      Notes
+                      <textarea
+                        value={editState.notes}
+                        onChange={(event) => handleEditStateChange('notes', event.target.value)}
+                        rows={4}
+                      />
+                    </label>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="detail-panel-actions">
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setIsEditingSelectedApplication(true)}
+                    >
+                      Edit application
+                    </button>
+                  </div>
+
+                  <dl className="detail-grid">
+                    <Detail label="Company" value={selectedApplication.company} />
+                    <Detail label="Location" value={selectedApplication.location} />
+                    <Detail label="Compensation" value={selectedApplication.salary} />
+                    <Detail label="Applied on" value={selectedApplication.appliedOn} />
+                    <Detail label="Resume used" value={selectedApplication.resume} />
+                    <Detail
+                      label="Primary contact"
+                      value={`${selectedApplication.contact} · ${selectedApplication.contactRole}`}
+                    />
+                  </dl>
+
+                  <div className="note-card">
+                    <h3>Next step</h3>
+                    <p>{selectedApplication.nextStep}</p>
+                  </div>
+
+                  <div className="note-card">
+                    <h3>Application notes</h3>
+                    <p>{selectedApplication.notes}</p>
+                  </div>
+
+                  <div className="follow-up-list">
+                    <div className="follow-up-header">
+                      <h3>Follow-ups</h3>
+                      <span>{selectedFollowUps.length}</span>
+                    </div>
+
+                    {selectedFollowUps.length > 0 ? (
+                      selectedFollowUps.map((followUp) => (
+                        <div key={followUp.id} className="follow-up-item">
+                          <div>
+                            <strong>{followUp.title}</strong>
+                            <p>{followUp.dueLabel}</p>
+                          </div>
+                          <span className={`status-chip ${followUp.status}`}>
+                            {followUpLabels[followUp.status]}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="empty-state">No follow-ups logged for this application yet.</p>
+                    )}
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <p className="empty-state">Add your first application to start the board.</p>
@@ -364,6 +572,20 @@ function App() {
       </main>
     </div>
   )
+}
+
+function getEmptyEditState(): ApplicationEditState {
+  return {
+    company: '',
+    role: '',
+    stage: 'Applied',
+    location: '',
+    salary: '',
+    nextStep: '',
+    contact: '',
+    contactRole: '',
+    notes: '',
+  }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
