@@ -364,6 +364,51 @@ select {
   border-radius: 16px;
 }
 
+.follow-up-item-actions,
+.follow-up-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.follow-up-item-actions {
+  flex-wrap: wrap;
+}
+
+.follow-up-edit-button {
+  padding: 8px 14px;
+}
+
+.follow-up-edit-form {
+  display: grid;
+  gap: 16px;
+}
+
+.follow-up-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.follow-up-edit-fields label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.follow-up-edit-fields input,
+.follow-up-edit-fields select {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.86);
+  color: #f8fafc;
+}
+
 .follow-up-item strong {
   display: block;
   margin-bottom: 4px;
@@ -393,7 +438,8 @@ select {
   .hero,
   .board-grid,
   .detail-grid,
-  .application-form-grid {
+  .application-form-grid,
+  .follow-up-edit-fields {
     grid-template-columns: 1fr;
   }
 }
@@ -415,7 +461,15 @@ select {
   .application-form-heading,
   .detail-edit-form-heading,
   .detail-panel-actions,
-  .detail-edit-actions {
+  .detail-edit-actions,
+  .follow-up-item,
+  .follow-up-item-actions,
+  .follow-up-edit-actions {
     flex-direction: column;
+  }
+
+  .follow-up-item-actions,
+  .follow-up-edit-actions {
+    align-items: stretch;
   }
 }

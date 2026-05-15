@@ -42,6 +42,12 @@ type ApplicationEditState = {
   notes: string
 }
 
+type FollowUpEditState = {
+  title: string
+  dueLabel: string
+  status: FollowUpStatus
+}
+
 const defaultFormState: ApplicationFormState = {
   company: '',
   role: '',
@@ -76,9 +82,11 @@ function App() {
   const [selectedApplicationId, setSelectedApplicationId] = useState(initialApplications[0]?.id ?? 0)
   const [formState, setFormState] = useState(defaultFormState)
   const [isEditingSelectedApplication, setIsEditingSelectedApplication] = useState(false)
+  const [editingFollowUpId, setEditingFollowUpId] = useState<number | null>(null)
   const [editState, setEditState] = useState<ApplicationEditState>(() =>
     initialApplications[0] ? getEditStateFromApplication(initialApplications[0]) : getEmptyEditState(),
   )
+  const [followUpEditState, setFollowUpEditState] = useState<FollowUpEditState>(getEmptyFollowUpEditState)
 
   const selectedApplication =
     applicationItems.find((application) => application.id === selectedApplicationId) ??
@@ -87,12 +95,16 @@ function App() {
   useEffect(() => {
     if (!selectedApplication) {
       setIsEditingSelectedApplication(false)
+      setEditingFollowUpId(null)
       setEditState(getEmptyEditState())
+      setFollowUpEditState(getEmptyFollowUpEditState())
       return
     }
 
     setIsEditingSelectedApplication(false)
+    setEditingFollowUpId(null)
     setEditState(getEditStateFromApplication(selectedApplication))
+    setFollowUpEditState(getEmptyFollowUpEditState())
   }, [selectedApplication])
 
   const applicationsByStage = useMemo(
@@ -107,6 +119,7 @@ function App() {
   const selectedFollowUps = followUpItems.filter(
     (followUp) => followUp.applicationId === selectedApplication?.id,
   )
+  const editingFollowUp = selectedFollowUps.find((followUp) => followUp.id === editingFollowUpId) ?? null
 
   const heroMetrics = useMemo(() => {
     const activeApplications = applicationItems.filter((application) => application.stage !== 'Closed').length
@@ -135,6 +148,16 @@ function App() {
     value: ApplicationEditState[Key],
   ) => {
     setEditState((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  const handleFollowUpEditStateChange = <Key extends keyof FollowUpEditState>(
+    key: Key,
+    value: FollowUpEditState[Key],
+  ) => {
+    setFollowUpEditState((current) => ({
       ...current,
       [key]: value,
     }))
@@ -230,6 +253,44 @@ function App() {
 
     setEditState(getEditStateFromApplication(selectedApplication))
     setIsEditingSelectedApplication(false)
+  }
+
+  const handleStartFollowUpEditing = (followUp: FollowUp) => {
+    setEditingFollowUpId(followUp.id)
+    setFollowUpEditState(getEditStateFromFollowUp(followUp))
+  }
+
+  const handleSaveFollowUpEdits = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!editingFollowUp) {
+      return
+    }
+
+    setFollowUpItems((current) =>
+      current.map((followUp) =>
+        followUp.id === editingFollowUp.id
+          ? {
+              ...followUp,
+              title: followUpEditState.title.trim() || 'Follow-up task',
+              dueLabel: followUpEditState.dueLabel.trim() || 'Schedule follow-up date',
+              status: followUpEditState.status,
+            }
+          : followUp,
+      ),
+    )
+
+    setEditingFollowUpId(null)
+    setFollowUpEditState(getEmptyFollowUpEditState())
+  }
+
+  const handleCancelFollowUpEdits = () => {
+    if (!editingFollowUp) {
+      return
+    }
+
+    setFollowUpEditState(getEditStateFromFollowUp(editingFollowUp))
+    setEditingFollowUpId(null)
   }
 
   return (
@@ -547,17 +608,80 @@ function App() {
                     </div>
 
                     {selectedFollowUps.length > 0 ? (
-                      selectedFollowUps.map((followUp) => (
-                        <div key={followUp.id} className="follow-up-item">
-                          <div>
-                            <strong>{followUp.title}</strong>
-                            <p>{followUp.dueLabel}</p>
+                      selectedFollowUps.map((followUp) => {
+                        const isEditingFollowUp = followUp.id === editingFollowUpId
+
+                        return isEditingFollowUp ? (
+                          <form key={followUp.id} className="follow-up-item follow-up-edit-form" onSubmit={handleSaveFollowUpEdits}>
+                            <div className="follow-up-edit-fields">
+                              <label>
+                                Title
+                                <input
+                                  value={followUpEditState.title}
+                                  onChange={(event) =>
+                                    handleFollowUpEditStateChange('title', event.target.value)
+                                  }
+                                  required
+                                />
+                              </label>
+                              <label>
+                                Timing
+                                <input
+                                  value={followUpEditState.dueLabel}
+                                  onChange={(event) =>
+                                    handleFollowUpEditStateChange('dueLabel', event.target.value)
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Status
+                                <select
+                                  value={followUpEditState.status}
+                                  onChange={(event) =>
+                                    handleFollowUpEditStateChange(
+                                      'status',
+                                      event.target.value as FollowUpStatus,
+                                    )
+                                  }
+                                >
+                                  {Object.entries(followUpLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                      {label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
+                            <div className="follow-up-edit-actions">
+                              <button type="button" className="secondary-action" onClick={handleCancelFollowUpEdits}>
+                                Cancel
+                              </button>
+                              <button type="submit" className="primary-action">
+                                Save follow-up
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div key={followUp.id} className="follow-up-item">
+                            <div>
+                              <strong>{followUp.title}</strong>
+                              <p>{followUp.dueLabel}</p>
+                            </div>
+                            <div className="follow-up-item-actions">
+                              <span className={`status-chip ${followUp.status}`}>
+                                {followUpLabels[followUp.status]}
+                              </span>
+                              <button
+                                type="button"
+                                className="secondary-action follow-up-edit-button"
+                                onClick={() => handleStartFollowUpEditing(followUp)}
+                              >
+                                Edit
+                              </button>
+                            </div>
                           </div>
-                          <span className={`status-chip ${followUp.status}`}>
-                            {followUpLabels[followUp.status]}
-                          </span>
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <p className="empty-state">No follow-ups logged for this application yet.</p>
                     )}
@@ -585,6 +709,22 @@ function getEmptyEditState(): ApplicationEditState {
     contact: '',
     contactRole: '',
     notes: '',
+  }
+}
+
+function getEditStateFromFollowUp(followUp: FollowUp): FollowUpEditState {
+  return {
+    title: followUp.title,
+    dueLabel: followUp.dueLabel,
+    status: followUp.status,
+  }
+}
+
+function getEmptyFollowUpEditState(): FollowUpEditState {
+  return {
+    title: '',
+    dueLabel: '',
+    status: 'due-today',
   }
 }
 
