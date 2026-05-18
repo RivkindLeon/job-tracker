@@ -153,6 +153,16 @@ select {
   margin-top: 20px;
 }
 
+.follow-up-create-form {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 8px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.52);
+}
+
 .application-form,
 .detail-edit-form {
   border: 1px solid rgba(148, 163, 184, 0.2);
@@ -385,6 +395,7 @@ select {
   gap: 16px;
 }
 
+.follow-up-create-fields,
 .follow-up-edit-fields {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -392,6 +403,7 @@ select {
   width: 100%;
 }
 
+.follow-up-create-fields label,
 .follow-up-edit-fields label {
   display: grid;
   gap: 8px;
@@ -399,6 +411,8 @@ select {
   color: #cbd5e1;
 }
 
+.follow-up-create-fields input,
+.follow-up-create-fields select,
 .follow-up-edit-fields input,
 .follow-up-edit-fields select {
   width: 100%;
@@ -433,12 +447,18 @@ select {
   color: #86efac;
 }
 
+.status-chip.completed {
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+}
+
 @media (max-width: 1180px) {
   .workspace,
   .hero,
   .board-grid,
   .detail-grid,
   .application-form-grid,
+  .follow-up-create-fields,
   .follow-up-edit-fields {
     grid-template-columns: 1fr;
   }
