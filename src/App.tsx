@@ -14,6 +14,7 @@ const followUpLabels: Record<FollowUpStatus, string> = {
   'due-today': 'Due today',
   'this-week': 'This week',
   waiting: 'Waiting',
+  completed: 'Completed',
 }
 
 type ApplicationFormState = {
@@ -46,6 +47,12 @@ type FollowUpEditState = {
   title: string
   dueLabel: string
   status: FollowUpStatus
+}
+
+type FollowUpFormState = {
+  title: string
+  dueLabel: string
+  status: Exclude<FollowUpStatus, 'completed'>
 }
 
 const defaultFormState: ApplicationFormState = {
@@ -87,6 +94,7 @@ function App() {
     initialApplications[0] ? getEditStateFromApplication(initialApplications[0]) : getEmptyEditState(),
   )
   const [followUpEditState, setFollowUpEditState] = useState<FollowUpEditState>(getEmptyFollowUpEditState)
+  const [followUpFormState, setFollowUpFormState] = useState<FollowUpFormState>(getEmptyFollowUpFormState)
 
   const selectedApplication =
     applicationItems.find((application) => application.id === selectedApplicationId) ??
@@ -98,6 +106,7 @@ function App() {
       setEditingFollowUpId(null)
       setEditState(getEmptyEditState())
       setFollowUpEditState(getEmptyFollowUpEditState())
+      setFollowUpFormState(getEmptyFollowUpFormState())
       return
     }
 
@@ -105,6 +114,7 @@ function App() {
     setEditingFollowUpId(null)
     setEditState(getEditStateFromApplication(selectedApplication))
     setFollowUpEditState(getEmptyFollowUpEditState())
+    setFollowUpFormState(getEmptyFollowUpFormState())
   }, [selectedApplication])
 
   const applicationsByStage = useMemo(
@@ -158,6 +168,16 @@ function App() {
     value: FollowUpEditState[Key],
   ) => {
     setFollowUpEditState((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  const handleFollowUpFormStateChange = <Key extends keyof FollowUpFormState>(
+    key: Key,
+    value: FollowUpFormState[Key],
+  ) => {
+    setFollowUpFormState((current) => ({
       ...current,
       [key]: value,
     }))
@@ -291,6 +311,50 @@ function App() {
 
     setFollowUpEditState(getEditStateFromFollowUp(editingFollowUp))
     setEditingFollowUpId(null)
+  }
+
+  const handleCreateFollowUp = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!selectedApplication) {
+      return
+    }
+
+    const newFollowUpId = followUpItems.reduce((maxId, followUp) => Math.max(maxId, followUp.id), 0) + 1
+    const newFollowUp: FollowUp = {
+      id: newFollowUpId,
+      applicationId: selectedApplication.id,
+      title: followUpFormState.title.trim() || 'Follow-up task',
+      dueLabel: followUpFormState.dueLabel.trim() || 'Schedule follow-up date',
+      status: followUpFormState.status,
+    }
+
+    setFollowUpItems((current) => [newFollowUp, ...current])
+    setFollowUpFormState(getEmptyFollowUpFormState())
+  }
+
+  const handleToggleFollowUpCompletion = (followUp: FollowUp) => {
+    setFollowUpItems((current) =>
+      current.map((item) => {
+        if (item.id !== followUp.id) {
+          return item
+        }
+
+        const isCompleted = item.status === 'completed'
+
+        return {
+          ...item,
+          status: isCompleted ? 'due-today' : 'completed',
+          dueLabel: isCompleted
+            ? item.dueLabel.startsWith('Completed')
+              ? 'Schedule follow-up date'
+              : item.dueLabel
+            : item.dueLabel.startsWith('Completed')
+              ? item.dueLabel
+              : `Completed · ${new Date().toISOString().slice(0, 10)}`,
+        }
+      }),
+    )
   }
 
   return (
@@ -607,6 +671,51 @@ function App() {
                       <span>{selectedFollowUps.length}</span>
                     </div>
 
+                    <form className="follow-up-create-form" onSubmit={handleCreateFollowUp}>
+                      <div className="follow-up-create-fields">
+                        <label>
+                          Title
+                          <input
+                            value={followUpFormState.title}
+                            onChange={(event) =>
+                              handleFollowUpFormStateChange('title', event.target.value)
+                            }
+                            placeholder="Send thank-you note"
+                            required
+                          />
+                        </label>
+                        <label>
+                          Timing
+                          <input
+                            value={followUpFormState.dueLabel}
+                            onChange={(event) =>
+                              handleFollowUpFormStateChange('dueLabel', event.target.value)
+                            }
+                            placeholder="Tomorrow · 10:00"
+                          />
+                        </label>
+                        <label>
+                          Status
+                          <select
+                            value={followUpFormState.status}
+                            onChange={(event) =>
+                              handleFollowUpFormStateChange(
+                                'status',
+                                event.target.value as FollowUpFormState['status'],
+                              )
+                            }
+                          >
+                            <option value="due-today">Due today</option>
+                            <option value="this-week">This week</option>
+                            <option value="waiting">Waiting</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button type="submit" className="primary-action">
+                        Add follow-up
+                      </button>
+                    </form>
+
                     {selectedFollowUps.length > 0 ? (
                       selectedFollowUps.map((followUp) => {
                         const isEditingFollowUp = followUp.id === editingFollowUpId
@@ -674,6 +783,13 @@ function App() {
                               <button
                                 type="button"
                                 className="secondary-action follow-up-edit-button"
+                                onClick={() => handleToggleFollowUpCompletion(followUp)}
+                              >
+                                {followUp.status === 'completed' ? 'Reopen' : 'Complete'}
+                              </button>
+                              <button
+                                type="button"
+                                className="secondary-action follow-up-edit-button"
                                 onClick={() => handleStartFollowUpEditing(followUp)}
                               >
                                 Edit
@@ -721,6 +837,14 @@ function getEditStateFromFollowUp(followUp: FollowUp): FollowUpEditState {
 }
 
 function getEmptyFollowUpEditState(): FollowUpEditState {
+  return {
+    title: '',
+    dueLabel: '',
+    status: 'due-today',
+  }
+}
+
+function getEmptyFollowUpFormState(): FollowUpFormState {
   return {
     title: '',
     dueLabel: '',

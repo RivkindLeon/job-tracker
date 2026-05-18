@@ -5,7 +5,7 @@ export type ApplicationStage =
   | 'Offer'
   | 'Closed'
 
-export type FollowUpStatus = 'due-today' | 'this-week' | 'waiting'
+export type FollowUpStatus = 'due-today' | 'this-week' | 'waiting' | 'completed'
 
 export type Application = {
   id: number
@@ -132,5 +132,12 @@ export const followUps: FollowUp[] = [
     title: 'Prepare offer comparison notes',
     dueLabel: 'Waiting on benefits PDF',
     status: 'waiting',
+  },
+  {
+    id: 4,
+    applicationId: 5,
+    title: 'Archive interview takeaways',
+    dueLabel: 'Completed last week',
+    status: 'completed',
   },
 ]
