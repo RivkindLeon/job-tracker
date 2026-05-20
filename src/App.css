@@ -364,6 +364,33 @@ select {
   margin-top: 24px;
 }
 
+.follow-up-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.filter-chip {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(15, 23, 42, 0.62);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.filter-chip:hover,
+.filter-chip.active {
+  border-color: rgba(96, 165, 250, 0.72);
+  background: rgba(37, 99, 235, 0.18);
+  color: #eff6ff;
+}
+
 .follow-up-item {
   display: flex;
   align-items: flex-start;
@@ -482,6 +509,7 @@ select {
   .detail-edit-form-heading,
   .detail-panel-actions,
   .detail-edit-actions,
+  .follow-up-filter-bar,
   .follow-up-item,
   .follow-up-item-actions,
   .follow-up-edit-actions {

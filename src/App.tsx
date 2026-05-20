@@ -55,6 +55,8 @@ type FollowUpFormState = {
   status: Exclude<FollowUpStatus, 'completed'>
 }
 
+type FollowUpFilter = 'all' | 'open' | 'completed'
+
 const defaultFormState: ApplicationFormState = {
   company: '',
   role: '',
@@ -95,6 +97,7 @@ function App() {
   )
   const [followUpEditState, setFollowUpEditState] = useState<FollowUpEditState>(getEmptyFollowUpEditState)
   const [followUpFormState, setFollowUpFormState] = useState<FollowUpFormState>(getEmptyFollowUpFormState)
+  const [followUpFilter, setFollowUpFilter] = useState<FollowUpFilter>('open')
 
   const selectedApplication =
     applicationItems.find((application) => application.id === selectedApplicationId) ??
@@ -130,6 +133,27 @@ function App() {
     (followUp) => followUp.applicationId === selectedApplication?.id,
   )
   const editingFollowUp = selectedFollowUps.find((followUp) => followUp.id === editingFollowUpId) ?? null
+  const followUpSummary = useMemo(() => {
+    const completedCount = selectedFollowUps.filter((followUp) => followUp.status === 'completed').length
+    const openCount = selectedFollowUps.length - completedCount
+
+    return {
+      all: selectedFollowUps.length,
+      open: openCount,
+      completed: completedCount,
+    }
+  }, [selectedFollowUps])
+  const visibleFollowUps = useMemo(() => {
+    if (followUpFilter === 'completed') {
+      return selectedFollowUps.filter((followUp) => followUp.status === 'completed')
+    }
+
+    if (followUpFilter === 'open') {
+      return selectedFollowUps.filter((followUp) => followUp.status !== 'completed')
+    }
+
+    return selectedFollowUps
+  }, [followUpFilter, selectedFollowUps])
 
   const heroMetrics = useMemo(() => {
     const activeApplications = applicationItems.filter((application) => application.stage !== 'Closed').length
@@ -671,6 +695,25 @@ function App() {
                       <span>{selectedFollowUps.length}</span>
                     </div>
 
+                    <div className="follow-up-filter-bar" aria-label="Filter follow-ups by status">
+                      {(
+                        [
+                          ['open', `Open ${followUpSummary.open}`],
+                          ['completed', `Completed ${followUpSummary.completed}`],
+                          ['all', `All ${followUpSummary.all}`],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`filter-chip ${followUpFilter === value ? 'active' : ''}`}
+                          onClick={() => setFollowUpFilter(value)}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
                     <form className="follow-up-create-form" onSubmit={handleCreateFollowUp}>
                       <div className="follow-up-create-fields">
                         <label>
@@ -716,8 +759,8 @@ function App() {
                       </button>
                     </form>
 
-                    {selectedFollowUps.length > 0 ? (
-                      selectedFollowUps.map((followUp) => {
+                    {visibleFollowUps.length > 0 ? (
+                      visibleFollowUps.map((followUp) => {
                         const isEditingFollowUp = followUp.id === editingFollowUpId
 
                         return isEditingFollowUp ? (
@@ -799,7 +842,11 @@ function App() {
                         )
                       })
                     ) : (
-                      <p className="empty-state">No follow-ups logged for this application yet.</p>
+                      <p className="empty-state">
+                        {selectedFollowUps.length === 0
+                          ? 'No follow-ups logged for this application yet.'
+                          : `No ${followUpFilter} follow-ups in this view yet.`}
+                      </p>
                     )}
                   </div>
                 </>
