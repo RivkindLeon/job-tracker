@@ -17,6 +17,13 @@ const followUpLabels: Record<FollowUpStatus, string> = {
   completed: 'Completed',
 }
 
+const followUpStatusPriority: Record<FollowUpStatus, number> = {
+  'due-today': 0,
+  'this-week': 1,
+  waiting: 2,
+  completed: 3,
+}
+
 type ApplicationFormState = {
   company: string
   role: string
@@ -144,15 +151,16 @@ function App() {
     }
   }, [selectedFollowUps])
   const visibleFollowUps = useMemo(() => {
-    if (followUpFilter === 'completed') {
-      return selectedFollowUps.filter((followUp) => followUp.status === 'completed')
-    }
+    const filteredFollowUps =
+      followUpFilter === 'completed'
+        ? selectedFollowUps.filter((followUp) => followUp.status === 'completed')
+        : followUpFilter === 'open'
+          ? selectedFollowUps.filter((followUp) => followUp.status !== 'completed')
+          : selectedFollowUps
 
-    if (followUpFilter === 'open') {
-      return selectedFollowUps.filter((followUp) => followUp.status !== 'completed')
-    }
-
-    return selectedFollowUps
+    return [...filteredFollowUps].sort(
+      (left, right) => followUpStatusPriority[left.status] - followUpStatusPriority[right.status],
+    )
   }, [followUpFilter, selectedFollowUps])
 
   const heroMetrics = useMemo(() => {
