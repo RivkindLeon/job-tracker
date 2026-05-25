@@ -364,11 +364,82 @@ select {
   margin-top: 24px;
 }
 
-.follow-up-filter-bar {
+.follow-up-planner-card {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.follow-up-planner-card h4,
+.planner-copy {
+  margin: 0;
+}
+
+.planner-copy {
+  margin-top: 8px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.planner-metrics,
+.follow-up-filter-bar,
+.follow-up-preset-bar,
+.follow-up-quick-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.follow-up-filter-bar {
   margin: 16px 0 0;
+}
+
+.planner-pill,
+.mini-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.planner-pill.due-today {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.planner-pill.this-week {
+  background: rgba(250, 204, 21, 0.15);
+  color: #fde68a;
+}
+
+.planner-pill.waiting {
+  background: rgba(52, 211, 153, 0.15);
+  color: #86efac;
+}
+
+.follow-up-preset-bar {
+  margin-bottom: 4px;
+}
+
+.mini-chip {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.62);
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.mini-chip.active,
+.mini-chip:hover {
+  border-color: rgba(96, 165, 250, 0.72);
+  background: rgba(37, 99, 235, 0.18);
+  color: #eff6ff;
 }
 
 .filter-chip {
@@ -411,6 +482,10 @@ select {
 
 .follow-up-item-actions {
   flex-wrap: wrap;
+}
+
+.follow-up-quick-actions {
+  justify-content: flex-end;
 }
 
 .follow-up-edit-button {

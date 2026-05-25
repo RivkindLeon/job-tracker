@@ -24,6 +24,12 @@ const followUpStatusPriority: Record<FollowUpStatus, number> = {
   completed: 3,
 }
 
+const followUpSchedulePresets: Record<Exclude<FollowUpStatus, 'completed'>, string> = {
+  'due-today': 'Today · 17:00',
+  'this-week': 'This week · Choose a day',
+  waiting: 'Waiting on recruiter response',
+}
+
 type ApplicationFormState = {
   company: string
   role: string
@@ -150,18 +156,26 @@ function App() {
       completed: completedCount,
     }
   }, [selectedFollowUps])
+  const sortedSelectedFollowUps = useMemo(
+    () =>
+      [...selectedFollowUps].sort(
+        (left, right) => followUpStatusPriority[left.status] - followUpStatusPriority[right.status],
+      ),
+    [selectedFollowUps],
+  )
+
   const visibleFollowUps = useMemo(() => {
     const filteredFollowUps =
       followUpFilter === 'completed'
-        ? selectedFollowUps.filter((followUp) => followUp.status === 'completed')
+        ? sortedSelectedFollowUps.filter((followUp) => followUp.status === 'completed')
         : followUpFilter === 'open'
-          ? selectedFollowUps.filter((followUp) => followUp.status !== 'completed')
-          : selectedFollowUps
+          ? sortedSelectedFollowUps.filter((followUp) => followUp.status !== 'completed')
+          : sortedSelectedFollowUps
 
-    return [...filteredFollowUps].sort(
-      (left, right) => followUpStatusPriority[left.status] - followUpStatusPriority[right.status],
-    )
-  }, [followUpFilter, selectedFollowUps])
+    return filteredFollowUps
+  }, [followUpFilter, sortedSelectedFollowUps])
+
+  const nextOpenFollowUp = sortedSelectedFollowUps.find((followUp) => followUp.status !== 'completed') ?? null
 
   const heroMetrics = useMemo(() => {
     const activeApplications = applicationItems.filter((application) => application.stage !== 'Closed').length
@@ -357,12 +371,38 @@ function App() {
       id: newFollowUpId,
       applicationId: selectedApplication.id,
       title: followUpFormState.title.trim() || 'Follow-up task',
-      dueLabel: followUpFormState.dueLabel.trim() || 'Schedule follow-up date',
+      dueLabel:
+        followUpFormState.dueLabel.trim() || followUpSchedulePresets[followUpFormState.status],
       status: followUpFormState.status,
     }
 
     setFollowUpItems((current) => [newFollowUp, ...current])
     setFollowUpFormState(getEmptyFollowUpFormState())
+  }
+
+  const handleApplyFollowUpPreset = (status: FollowUpFormState['status']) => {
+    setFollowUpFormState((current) => ({
+      ...current,
+      status,
+      dueLabel: followUpSchedulePresets[status],
+    }))
+  }
+
+  const handleRescheduleFollowUp = (
+    followUpId: number,
+    status: Exclude<FollowUpStatus, 'completed'>,
+  ) => {
+    setFollowUpItems((current) =>
+      current.map((item) =>
+        item.id === followUpId
+          ? {
+              ...item,
+              status,
+              dueLabel: followUpSchedulePresets[status],
+            }
+          : item,
+      ),
+    )
   }
 
   const handleToggleFollowUpCompletion = (followUp: FollowUp) => {
@@ -703,6 +743,23 @@ function App() {
                       <span>{selectedFollowUps.length}</span>
                     </div>
 
+                    <div className="follow-up-planner-card">
+                      <div>
+                        <p className="section-label">Planning snapshot</p>
+                        <h4>{nextOpenFollowUp ? nextOpenFollowUp.title : 'No open follow-up queued'}</h4>
+                        <p className="planner-copy">
+                          {nextOpenFollowUp
+                            ? `${followUpLabels[nextOpenFollowUp.status]} · ${nextOpenFollowUp.dueLabel}`
+                            : 'Everything for this application is currently completed.'}
+                        </p>
+                      </div>
+                      <div className="planner-metrics" aria-label="Follow-up urgency summary">
+                        <span className="planner-pill due-today">Due today {selectedFollowUps.filter((followUp) => followUp.status === 'due-today').length}</span>
+                        <span className="planner-pill this-week">This week {selectedFollowUps.filter((followUp) => followUp.status === 'this-week').length}</span>
+                        <span className="planner-pill waiting">Waiting {selectedFollowUps.filter((followUp) => followUp.status === 'waiting').length}</span>
+                      </div>
+                    </div>
+
                     <div className="follow-up-filter-bar" aria-label="Filter follow-ups by status">
                       {(
                         [
@@ -723,6 +780,25 @@ function App() {
                     </div>
 
                     <form className="follow-up-create-form" onSubmit={handleCreateFollowUp}>
+                      <div className="follow-up-preset-bar" aria-label="Apply a quick follow-up timing preset">
+                        {(
+                          [
+                            ['due-today', 'Set for today'],
+                            ['this-week', 'Plan this week'],
+                            ['waiting', 'Mark as waiting'],
+                          ] as const
+                        ).map(([status, label]) => (
+                          <button
+                            key={status}
+                            type="button"
+                            className={`filter-chip ${followUpFormState.status === status ? 'active' : ''}`}
+                            onClick={() => handleApplyFollowUpPreset(status)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
                       <div className="follow-up-create-fields">
                         <label>
                           Title
@@ -831,6 +907,26 @@ function App() {
                               <span className={`status-chip ${followUp.status}`}>
                                 {followUpLabels[followUp.status]}
                               </span>
+                              {followUp.status !== 'completed' ? (
+                                <div className="follow-up-quick-actions" aria-label="Quick reschedule follow-up">
+                                  {(
+                                    [
+                                      ['due-today', 'Today'],
+                                      ['this-week', 'Week'],
+                                      ['waiting', 'Waiting'],
+                                    ] as const
+                                  ).map(([status, label]) => (
+                                    <button
+                                      key={status}
+                                      type="button"
+                                      className={`mini-chip ${followUp.status === status ? 'active' : ''}`}
+                                      onClick={() => handleRescheduleFollowUp(followUp.id, status)}
+                                    >
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null}
                               <button
                                 type="button"
                                 className="secondary-action follow-up-edit-button"
