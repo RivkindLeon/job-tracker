@@ -4,71 +4,21 @@ import {
   followUps as initialFollowUps,
   stages,
   type Application,
-  type ApplicationStage,
   type FollowUp,
   type FollowUpStatus,
 } from './data'
+import { Metric } from './components/Metric'
+import { ApplicationForm, type ApplicationFormState } from './components/ApplicationForm'
+import { ApplicationBoard } from './components/ApplicationBoard'
+import { ApplicationDetail, type ApplicationEditState } from './components/ApplicationDetail'
+import {
+  type FollowUpFilter,
+  type FollowUpEditState,
+  type FollowUpFormState,
+} from './components/FollowUpList'
+import { followUpSchedulePresets } from './constants'
+import { useFollowUpPriority } from './hooks/useFollowUpPriority'
 import './App.css'
-
-const followUpLabels: Record<FollowUpStatus, string> = {
-  'due-today': 'Due today',
-  'this-week': 'This week',
-  waiting: 'Waiting',
-  completed: 'Completed',
-}
-
-const followUpStatusPriority: Record<FollowUpStatus, number> = {
-  'due-today': 0,
-  'this-week': 1,
-  waiting: 2,
-  completed: 3,
-}
-
-const followUpSchedulePresets: Record<Exclude<FollowUpStatus, 'completed'>, string> = {
-  'due-today': 'Today · 17:00',
-  'this-week': 'This week · Choose a day',
-  waiting: 'Waiting on recruiter response',
-}
-
-type ApplicationFormState = {
-  company: string
-  role: string
-  stage: ApplicationStage
-  location: string
-  salary: string
-  nextStep: string
-  contact: string
-  contactRole: string
-  notes: string
-  followUpTitle: string
-  followUpDueLabel: string
-}
-
-type ApplicationEditState = {
-  company: string
-  role: string
-  stage: ApplicationStage
-  location: string
-  salary: string
-  nextStep: string
-  contact: string
-  contactRole: string
-  notes: string
-}
-
-type FollowUpEditState = {
-  title: string
-  dueLabel: string
-  status: FollowUpStatus
-}
-
-type FollowUpFormState = {
-  title: string
-  dueLabel: string
-  status: Exclude<FollowUpStatus, 'completed'>
-}
-
-type FollowUpFilter = 'all' | 'open' | 'completed'
 
 const defaultFormState: ApplicationFormState = {
   company: '',
@@ -98,18 +48,62 @@ function getEditStateFromApplication(application: Application): ApplicationEditS
   }
 }
 
+function getEmptyEditState(): ApplicationEditState {
+  return {
+    company: '',
+    role: '',
+    stage: 'Applied',
+    location: '',
+    salary: '',
+    nextStep: '',
+    contact: '',
+    contactRole: '',
+    notes: '',
+  }
+}
+
+function getEditStateFromFollowUp(followUp: FollowUp): FollowUpEditState {
+  return {
+    title: followUp.title,
+    dueLabel: followUp.dueLabel,
+    status: followUp.status,
+  }
+}
+
+function getEmptyFollowUpEditState(): FollowUpEditState {
+  return {
+    title: '',
+    dueLabel: '',
+    status: 'due-today',
+  }
+}
+
+function getEmptyFollowUpFormState(): FollowUpFormState {
+  return {
+    title: '',
+    dueLabel: '',
+    status: 'due-today',
+  }
+}
+
 function App() {
   const [applicationItems, setApplicationItems] = useState(initialApplications)
   const [followUpItems, setFollowUpItems] = useState(initialFollowUps)
-  const [selectedApplicationId, setSelectedApplicationId] = useState(initialApplications[0]?.id ?? 0)
+  const [selectedApplicationId, setSelectedApplicationId] = useState(
+    initialApplications[0]?.id ?? 0,
+  )
   const [formState, setFormState] = useState(defaultFormState)
   const [isEditingSelectedApplication, setIsEditingSelectedApplication] = useState(false)
   const [editingFollowUpId, setEditingFollowUpId] = useState<number | null>(null)
   const [editState, setEditState] = useState<ApplicationEditState>(() =>
-    initialApplications[0] ? getEditStateFromApplication(initialApplications[0]) : getEmptyEditState(),
+    initialApplications[0]
+      ? getEditStateFromApplication(initialApplications[0])
+      : getEmptyEditState(),
   )
-  const [followUpEditState, setFollowUpEditState] = useState<FollowUpEditState>(getEmptyFollowUpEditState)
-  const [followUpFormState, setFollowUpFormState] = useState<FollowUpFormState>(getEmptyFollowUpFormState)
+  const [followUpEditState, setFollowUpEditState] =
+    useState<FollowUpEditState>(getEmptyFollowUpEditState)
+  const [followUpFormState, setFollowUpFormState] =
+    useState<FollowUpFormState>(getEmptyFollowUpFormState)
   const [followUpFilter, setFollowUpFilter] = useState<FollowUpFilter>('open')
 
   const selectedApplication =
@@ -145,9 +139,14 @@ function App() {
   const selectedFollowUps = followUpItems.filter(
     (followUp) => followUp.applicationId === selectedApplication?.id,
   )
-  const editingFollowUp = selectedFollowUps.find((followUp) => followUp.id === editingFollowUpId) ?? null
+
+  const editingFollowUp =
+    selectedFollowUps.find((followUp) => followUp.id === editingFollowUpId) ?? null
+
   const followUpSummary = useMemo(() => {
-    const completedCount = selectedFollowUps.filter((followUp) => followUp.status === 'completed').length
+    const completedCount = selectedFollowUps.filter(
+      (followUp) => followUp.status === 'completed',
+    ).length
     const openCount = selectedFollowUps.length - completedCount
 
     return {
@@ -156,13 +155,8 @@ function App() {
       completed: completedCount,
     }
   }, [selectedFollowUps])
-  const sortedSelectedFollowUps = useMemo(
-    () =>
-      [...selectedFollowUps].sort(
-        (left, right) => followUpStatusPriority[left.status] - followUpStatusPriority[right.status],
-      ),
-    [selectedFollowUps],
-  )
+
+  const sortedSelectedFollowUps = useFollowUpPriority(selectedFollowUps)
 
   const visibleFollowUps = useMemo(() => {
     const filteredFollowUps =
@@ -175,12 +169,17 @@ function App() {
     return filteredFollowUps
   }, [followUpFilter, sortedSelectedFollowUps])
 
-  const nextOpenFollowUp = sortedSelectedFollowUps.find((followUp) => followUp.status !== 'completed') ?? null
+  const nextOpenFollowUp =
+    sortedSelectedFollowUps.find((followUp) => followUp.status !== 'completed') ?? null
 
   const heroMetrics = useMemo(() => {
-    const activeApplications = applicationItems.filter((application) => application.stage !== 'Closed').length
+    const activeApplications = applicationItems.filter(
+      (application) => application.stage !== 'Closed',
+    ).length
     const dueFollowUps = followUpItems.filter((followUp) => followUp.status === 'due-today').length
-    const offersInPlay = applicationItems.filter((application) => application.stage === 'Offer').length
+    const offersInPlay = applicationItems.filter(
+      (application) => application.stage === 'Offer',
+    ).length
 
     return {
       activeApplications,
@@ -245,7 +244,8 @@ function App() {
       stage: formState.stage,
       location: formState.location.trim() || 'Location to confirm',
       salary: formState.salary.trim() || 'Compensation not captured yet',
-      appliedOn: formState.stage === 'Wishlist' ? 'Not applied yet' : new Date().toISOString().slice(0, 10),
+      appliedOn:
+        formState.stage === 'Wishlist' ? 'Not applied yet' : new Date().toISOString().slice(0, 10),
       nextStep: formState.nextStep.trim() || 'Define the next step for this opportunity',
       resume: 'Resume to attach',
       contact: formState.contact.trim() || 'Contact to add',
@@ -257,7 +257,8 @@ function App() {
     setSelectedApplicationId(newApplicationId)
 
     if (trimmedFollowUpTitle) {
-      const newFollowUpId = followUpItems.reduce((maxId, followUp) => Math.max(maxId, followUp.id), 0) + 1
+      const newFollowUpId =
+        followUpItems.reduce((maxId, followUp) => Math.max(maxId, followUp.id), 0) + 1
       const newFollowUp: FollowUp = {
         id: newFollowUpId,
         applicationId: newApplicationId,
@@ -366,7 +367,8 @@ function App() {
       return
     }
 
-    const newFollowUpId = followUpItems.reduce((maxId, followUp) => Math.max(maxId, followUp.id), 0) + 1
+    const newFollowUpId =
+      followUpItems.reduce((maxId, followUp) => Math.max(maxId, followUp.id), 0) + 1
     const newFollowUp: FollowUp = {
       id: newFollowUpId,
       applicationId: selectedApplication.id,
@@ -457,566 +459,55 @@ function App() {
             <span className="pill">Local state flow</span>
           </div>
 
-          <form className="application-form" onSubmit={handleCreateApplication}>
-            <div className="application-form-heading">
-              <div>
-                <h3>Add application</h3>
-                <p>Capture a new opportunity and attach the first follow-up in one step.</p>
-              </div>
-              <button type="submit" className="primary-action">
-                Save application
-              </button>
-            </div>
+          <ApplicationForm
+            formState={formState}
+            stages={stages}
+            onFormChange={handleFormChange}
+            onSubmit={handleCreateApplication}
+          />
 
-            <div className="application-form-grid">
-              <label>
-                Company
-                <input
-                  value={formState.company}
-                  onChange={(event) => handleFormChange('company', event.target.value)}
-                  placeholder="Northwind Systems"
-                  required
-                />
-              </label>
-              <label>
-                Role
-                <input
-                  value={formState.role}
-                  onChange={(event) => handleFormChange('role', event.target.value)}
-                  placeholder="Frontend Engineer"
-                  required
-                />
-              </label>
-              <label>
-                Stage
-                <select
-                  value={formState.stage}
-                  onChange={(event) =>
-                    handleFormChange('stage', event.target.value as ApplicationStage)
-                  }
-                >
-                  {stages.map((stage) => (
-                    <option key={stage} value={stage}>
-                      {stage}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Location
-                <input
-                  value={formState.location}
-                  onChange={(event) => handleFormChange('location', event.target.value)}
-                  placeholder="Remote · EU"
-                />
-              </label>
-              <label>
-                Compensation
-                <input
-                  value={formState.salary}
-                  onChange={(event) => handleFormChange('salary', event.target.value)}
-                  placeholder="€70k - €85k"
-                />
-              </label>
-              <label>
-                Next step
-                <input
-                  value={formState.nextStep}
-                  onChange={(event) => handleFormChange('nextStep', event.target.value)}
-                  placeholder="Send portfolio follow-up"
-                />
-              </label>
-              <label>
-                Contact
-                <input
-                  value={formState.contact}
-                  onChange={(event) => handleFormChange('contact', event.target.value)}
-                  placeholder="Mina Shah"
-                />
-              </label>
-              <label>
-                Contact role
-                <input
-                  value={formState.contactRole}
-                  onChange={(event) => handleFormChange('contactRole', event.target.value)}
-                  placeholder="Recruiter"
-                />
-              </label>
-              <label>
-                First follow-up
-                <input
-                  value={formState.followUpTitle}
-                  onChange={(event) => handleFormChange('followUpTitle', event.target.value)}
-                  placeholder="Share tailored resume"
-                />
-              </label>
-              <label>
-                Follow-up timing
-                <input
-                  value={formState.followUpDueLabel}
-                  onChange={(event) => handleFormChange('followUpDueLabel', event.target.value)}
-                  placeholder="Tomorrow · 09:00"
-                />
-              </label>
-              <label className="application-form-note">
-                Notes
-                <textarea
-                  value={formState.notes}
-                  onChange={(event) => handleFormChange('notes', event.target.value)}
-                  placeholder="Why this role matters, prep reminders, or resume tailoring notes"
-                  rows={4}
-                />
-              </label>
-            </div>
-          </form>
-
-          <div className="board-grid">
-            {applicationsByStage.map((column) => (
-              <article key={column.stage} className="stage-column">
-                <div className="stage-header">
-                  <h3>{column.stage}</h3>
-                  <span>{column.items.length}</span>
-                </div>
-                <div className="stage-cards">
-                  {column.items.map((application) => (
-                    <button
-                      key={application.id}
-                      type="button"
-                      className={`application-card ${
-                        application.id === selectedApplication?.id ? 'selected' : ''
-                      }`}
-                      onClick={() => setSelectedApplicationId(application.id)}
-                    >
-                      <strong>{application.role}</strong>
-                      <span>{application.company}</span>
-                      <small>{application.nextStep}</small>
-                    </button>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+          <ApplicationBoard
+            applicationsByStage={applicationsByStage}
+            selectedApplicationId={selectedApplication?.id}
+            onSelectApplication={setSelectedApplicationId}
+          />
         </section>
 
         <aside className="detail-panel">
           {selectedApplication ? (
-            <>
-              <div className="section-heading">
-                <div>
-                  <p className="section-label">Selected application</p>
-                  <h2>{selectedApplication.role}</h2>
-                </div>
-                <span className="pill muted">{selectedApplication.stage}</span>
-              </div>
-
-              {isEditingSelectedApplication ? (
-                <form className="detail-edit-form" onSubmit={handleSaveApplicationEdits}>
-                  <div className="detail-edit-form-heading">
-                    <div>
-                      <h3>Edit application</h3>
-                      <p>Correct details or move the opportunity to a new stage without leaving the board.</p>
-                    </div>
-                    <div className="detail-edit-actions">
-                      <button type="button" className="secondary-action" onClick={handleCancelEdits}>
-                        Cancel
-                      </button>
-                      <button type="submit" className="primary-action">
-                        Save changes
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="detail-edit-grid">
-                    <label>
-                      Company
-                      <input
-                        value={editState.company}
-                        onChange={(event) => handleEditStateChange('company', event.target.value)}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Role
-                      <input
-                        value={editState.role}
-                        onChange={(event) => handleEditStateChange('role', event.target.value)}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Stage
-                      <select
-                        value={editState.stage}
-                        onChange={(event) =>
-                          handleEditStateChange('stage', event.target.value as ApplicationStage)
-                        }
-                      >
-                        {stages.map((stage) => (
-                          <option key={stage} value={stage}>
-                            {stage}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Location
-                      <input
-                        value={editState.location}
-                        onChange={(event) => handleEditStateChange('location', event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Compensation
-                      <input
-                        value={editState.salary}
-                        onChange={(event) => handleEditStateChange('salary', event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Next step
-                      <input
-                        value={editState.nextStep}
-                        onChange={(event) => handleEditStateChange('nextStep', event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Contact
-                      <input
-                        value={editState.contact}
-                        onChange={(event) => handleEditStateChange('contact', event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Contact role
-                      <input
-                        value={editState.contactRole}
-                        onChange={(event) => handleEditStateChange('contactRole', event.target.value)}
-                      />
-                    </label>
-                    <label className="application-form-note">
-                      Notes
-                      <textarea
-                        value={editState.notes}
-                        onChange={(event) => handleEditStateChange('notes', event.target.value)}
-                        rows={4}
-                      />
-                    </label>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className="detail-panel-actions">
-                    <button
-                      type="button"
-                      className="secondary-action"
-                      onClick={() => setIsEditingSelectedApplication(true)}
-                    >
-                      Edit application
-                    </button>
-                  </div>
-
-                  <dl className="detail-grid">
-                    <Detail label="Company" value={selectedApplication.company} />
-                    <Detail label="Location" value={selectedApplication.location} />
-                    <Detail label="Compensation" value={selectedApplication.salary} />
-                    <Detail label="Applied on" value={selectedApplication.appliedOn} />
-                    <Detail label="Resume used" value={selectedApplication.resume} />
-                    <Detail
-                      label="Primary contact"
-                      value={`${selectedApplication.contact} · ${selectedApplication.contactRole}`}
-                    />
-                  </dl>
-
-                  <div className="note-card">
-                    <h3>Next step</h3>
-                    <p>{selectedApplication.nextStep}</p>
-                  </div>
-
-                  <div className="note-card">
-                    <h3>Application notes</h3>
-                    <p>{selectedApplication.notes}</p>
-                  </div>
-
-                  <div className="follow-up-list">
-                    <div className="follow-up-header">
-                      <h3>Follow-ups</h3>
-                      <span>{selectedFollowUps.length}</span>
-                    </div>
-
-                    <div className="follow-up-planner-card">
-                      <div>
-                        <p className="section-label">Planning snapshot</p>
-                        <h4>{nextOpenFollowUp ? nextOpenFollowUp.title : 'No open follow-up queued'}</h4>
-                        <p className="planner-copy">
-                          {nextOpenFollowUp
-                            ? `${followUpLabels[nextOpenFollowUp.status]} · ${nextOpenFollowUp.dueLabel}`
-                            : 'Everything for this application is currently completed.'}
-                        </p>
-                      </div>
-                      <div className="planner-metrics" aria-label="Follow-up urgency summary">
-                        <span className="planner-pill due-today">Due today {selectedFollowUps.filter((followUp) => followUp.status === 'due-today').length}</span>
-                        <span className="planner-pill this-week">This week {selectedFollowUps.filter((followUp) => followUp.status === 'this-week').length}</span>
-                        <span className="planner-pill waiting">Waiting {selectedFollowUps.filter((followUp) => followUp.status === 'waiting').length}</span>
-                      </div>
-                    </div>
-
-                    <div className="follow-up-filter-bar" aria-label="Filter follow-ups by status">
-                      {(
-                        [
-                          ['open', `Open ${followUpSummary.open}`],
-                          ['completed', `Completed ${followUpSummary.completed}`],
-                          ['all', `All ${followUpSummary.all}`],
-                        ] as const
-                      ).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={`filter-chip ${followUpFilter === value ? 'active' : ''}`}
-                          onClick={() => setFollowUpFilter(value)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <form className="follow-up-create-form" onSubmit={handleCreateFollowUp}>
-                      <div className="follow-up-preset-bar" aria-label="Apply a quick follow-up timing preset">
-                        {(
-                          [
-                            ['due-today', 'Set for today'],
-                            ['this-week', 'Plan this week'],
-                            ['waiting', 'Mark as waiting'],
-                          ] as const
-                        ).map(([status, label]) => (
-                          <button
-                            key={status}
-                            type="button"
-                            className={`filter-chip ${followUpFormState.status === status ? 'active' : ''}`}
-                            onClick={() => handleApplyFollowUpPreset(status)}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="follow-up-create-fields">
-                        <label>
-                          Title
-                          <input
-                            value={followUpFormState.title}
-                            onChange={(event) =>
-                              handleFollowUpFormStateChange('title', event.target.value)
-                            }
-                            placeholder="Send thank-you note"
-                            required
-                          />
-                        </label>
-                        <label>
-                          Timing
-                          <input
-                            value={followUpFormState.dueLabel}
-                            onChange={(event) =>
-                              handleFollowUpFormStateChange('dueLabel', event.target.value)
-                            }
-                            placeholder="Tomorrow · 10:00"
-                          />
-                        </label>
-                        <label>
-                          Status
-                          <select
-                            value={followUpFormState.status}
-                            onChange={(event) =>
-                              handleFollowUpFormStateChange(
-                                'status',
-                                event.target.value as FollowUpFormState['status'],
-                              )
-                            }
-                          >
-                            <option value="due-today">Due today</option>
-                            <option value="this-week">This week</option>
-                            <option value="waiting">Waiting</option>
-                          </select>
-                        </label>
-                      </div>
-                      <button type="submit" className="primary-action">
-                        Add follow-up
-                      </button>
-                    </form>
-
-                    {visibleFollowUps.length > 0 ? (
-                      visibleFollowUps.map((followUp) => {
-                        const isEditingFollowUp = followUp.id === editingFollowUpId
-
-                        return isEditingFollowUp ? (
-                          <form key={followUp.id} className="follow-up-item follow-up-edit-form" onSubmit={handleSaveFollowUpEdits}>
-                            <div className="follow-up-edit-fields">
-                              <label>
-                                Title
-                                <input
-                                  value={followUpEditState.title}
-                                  onChange={(event) =>
-                                    handleFollowUpEditStateChange('title', event.target.value)
-                                  }
-                                  required
-                                />
-                              </label>
-                              <label>
-                                Timing
-                                <input
-                                  value={followUpEditState.dueLabel}
-                                  onChange={(event) =>
-                                    handleFollowUpEditStateChange('dueLabel', event.target.value)
-                                  }
-                                />
-                              </label>
-                              <label>
-                                Status
-                                <select
-                                  value={followUpEditState.status}
-                                  onChange={(event) =>
-                                    handleFollowUpEditStateChange(
-                                      'status',
-                                      event.target.value as FollowUpStatus,
-                                    )
-                                  }
-                                >
-                                  {Object.entries(followUpLabels).map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                      {label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                            </div>
-                            <div className="follow-up-edit-actions">
-                              <button type="button" className="secondary-action" onClick={handleCancelFollowUpEdits}>
-                                Cancel
-                              </button>
-                              <button type="submit" className="primary-action">
-                                Save follow-up
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          <div key={followUp.id} className="follow-up-item">
-                            <div>
-                              <strong>{followUp.title}</strong>
-                              <p>{followUp.dueLabel}</p>
-                            </div>
-                            <div className="follow-up-item-actions">
-                              <span className={`status-chip ${followUp.status}`}>
-                                {followUpLabels[followUp.status]}
-                              </span>
-                              {followUp.status !== 'completed' ? (
-                                <div className="follow-up-quick-actions" aria-label="Quick reschedule follow-up">
-                                  {(
-                                    [
-                                      ['due-today', 'Today'],
-                                      ['this-week', 'Week'],
-                                      ['waiting', 'Waiting'],
-                                    ] as const
-                                  ).map(([status, label]) => (
-                                    <button
-                                      key={status}
-                                      type="button"
-                                      className={`mini-chip ${followUp.status === status ? 'active' : ''}`}
-                                      onClick={() => handleRescheduleFollowUp(followUp.id, status)}
-                                    >
-                                      {label}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null}
-                              <button
-                                type="button"
-                                className="secondary-action follow-up-edit-button"
-                                onClick={() => handleToggleFollowUpCompletion(followUp)}
-                              >
-                                {followUp.status === 'completed' ? 'Reopen' : 'Complete'}
-                              </button>
-                              <button
-                                type="button"
-                                className="secondary-action follow-up-edit-button"
-                                onClick={() => handleStartFollowUpEditing(followUp)}
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      <p className="empty-state">
-                        {selectedFollowUps.length === 0
-                          ? 'No follow-ups logged for this application yet.'
-                          : `No ${followUpFilter} follow-ups in this view yet.`}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-            </>
+            <ApplicationDetail
+              application={selectedApplication}
+              stages={stages}
+              isEditing={isEditingSelectedApplication}
+              editState={editState}
+              followUps={selectedFollowUps}
+              visibleFollowUps={visibleFollowUps}
+              followUpSummary={followUpSummary}
+              followUpFilter={followUpFilter}
+              nextOpenFollowUp={nextOpenFollowUp}
+              editingFollowUpId={editingFollowUpId}
+              followUpEditState={followUpEditState}
+              followUpFormState={followUpFormState}
+              onStartEdit={() => setIsEditingSelectedApplication(true)}
+              onSaveEdit={handleSaveApplicationEdits}
+              onCancelEdit={handleCancelEdits}
+              onEditStateChange={handleEditStateChange}
+              onFollowUpFilterChange={setFollowUpFilter}
+              onStartFollowUpEdit={handleStartFollowUpEditing}
+              onSaveFollowUpEdit={handleSaveFollowUpEdits}
+              onCancelFollowUpEdit={handleCancelFollowUpEdits}
+              onFollowUpEditStateChange={handleFollowUpEditStateChange}
+              onFollowUpFormStateChange={handleFollowUpFormStateChange}
+              onCreateFollowUp={handleCreateFollowUp}
+              onApplyFollowUpPreset={handleApplyFollowUpPreset}
+              onRescheduleFollowUp={handleRescheduleFollowUp}
+              onToggleFollowUpCompletion={handleToggleFollowUpCompletion}
+            />
           ) : (
             <p className="empty-state">Add your first application to start the board.</p>
           )}
         </aside>
       </main>
-    </div>
-  )
-}
-
-function getEmptyEditState(): ApplicationEditState {
-  return {
-    company: '',
-    role: '',
-    stage: 'Applied',
-    location: '',
-    salary: '',
-    nextStep: '',
-    contact: '',
-    contactRole: '',
-    notes: '',
-  }
-}
-
-function getEditStateFromFollowUp(followUp: FollowUp): FollowUpEditState {
-  return {
-    title: followUp.title,
-    dueLabel: followUp.dueLabel,
-    status: followUp.status,
-  }
-}
-
-function getEmptyFollowUpEditState(): FollowUpEditState {
-  return {
-    title: '',
-    dueLabel: '',
-    status: 'due-today',
-  }
-}
-
-function getEmptyFollowUpFormState(): FollowUpFormState {
-  return {
-    title: '',
-    dueLabel: '',
-    status: 'due-today',
-  }
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  )
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
     </div>
   )
 }

@@ -1,9 +1,4 @@
-export type ApplicationStage =
-  | 'Wishlist'
-  | 'Applied'
-  | 'Interviewing'
-  | 'Offer'
-  | 'Closed'
+export type ApplicationStage = 'Wishlist' | 'Applied' | 'Interviewing' | 'Offer' | 'Closed'
 
 export type FollowUpStatus = 'due-today' | 'this-week' | 'waiting' | 'completed'
 
@@ -30,13 +25,7 @@ export type FollowUp = {
   status: FollowUpStatus
 }
 
-export const stages: ApplicationStage[] = [
-  'Wishlist',
-  'Applied',
-  'Interviewing',
-  'Offer',
-  'Closed',
-]
+export const stages: ApplicationStage[] = ['Wishlist', 'Applied', 'Interviewing', 'Offer', 'Closed']
 
 export const applications: Application[] = [
   {
