@@ -23,6 +23,7 @@ export type FollowUp = {
   title: string
   dueLabel: string
   status: FollowUpStatus
+  context: string
 }
 
 export const stages: ApplicationStage[] = ['Wishlist', 'Applied', 'Interviewing', 'Offer', 'Closed']
@@ -107,6 +108,7 @@ export const followUps: FollowUp[] = [
     title: 'Confirm interview availability',
     dueLabel: 'Today · 18:00',
     status: 'due-today',
+    context: 'Interview coordination',
   },
   {
     id: 2,
@@ -114,6 +116,7 @@ export const followUps: FollowUp[] = [
     title: 'Nudge with portfolio link',
     dueLabel: 'Friday morning',
     status: 'this-week',
+    context: 'Portfolio follow-up',
   },
   {
     id: 3,
@@ -121,6 +124,7 @@ export const followUps: FollowUp[] = [
     title: 'Prepare offer comparison notes',
     dueLabel: 'Waiting on benefits PDF',
     status: 'waiting',
+    context: 'Offer review',
   },
   {
     id: 4,
@@ -128,5 +132,6 @@ export const followUps: FollowUp[] = [
     title: 'Archive interview takeaways',
     dueLabel: 'Completed last week',
     status: 'completed',
+    context: 'Retrospective notes',
   },
 ]

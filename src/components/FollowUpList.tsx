@@ -7,12 +7,14 @@ export type FollowUpEditState = {
   title: string
   dueLabel: string
   status: FollowUpStatus
+  context: string
 }
 
 export type FollowUpFormState = {
   title: string
   dueLabel: string
   status: Exclude<FollowUpStatus, 'completed'>
+  context: string
 }
 
 const followUpLabels: Record<FollowUpStatus, string> = {
@@ -86,7 +88,7 @@ export function FollowUpList({
           <h4>{nextOpenFollowUp ? nextOpenFollowUp.title : 'No open follow-up queued'}</h4>
           <p className="planner-copy">
             {nextOpenFollowUp
-              ? `${followUpLabels[nextOpenFollowUp.status]} · ${nextOpenFollowUp.dueLabel}`
+              ? `${followUpLabels[nextOpenFollowUp.status]} · ${nextOpenFollowUp.dueLabel}${nextOpenFollowUp.context ? ` · ${nextOpenFollowUp.context}` : ''}`
               : 'Everything for this application is currently completed.'}
           </p>
         </div>
@@ -173,6 +175,14 @@ export function FollowUpList({
               <option value="waiting">Waiting</option>
             </select>
           </label>
+          <label>
+            Context
+            <input
+              value={followUpFormState.context}
+              onChange={(event) => onFormStateChange('context', event.target.value)}
+              placeholder="Interview prep"
+            />
+          </label>
         </div>
         <button type="submit" className="primary-action">
           Add follow-up
@@ -220,6 +230,14 @@ export function FollowUpList({
                     ))}
                   </select>
                 </label>
+                <label>
+                  Context
+                  <input
+                    value={followUpEditState.context}
+                    onChange={(event) => onEditStateChange('context', event.target.value)}
+                    placeholder="Interview prep"
+                  />
+                </label>
               </div>
               <div className="follow-up-edit-actions">
                 <button type="button" className="secondary-action" onClick={onCancelEdit}>
@@ -233,7 +251,10 @@ export function FollowUpList({
           ) : (
             <div key={followUp.id} className="follow-up-item">
               <div>
-                <strong>{followUp.title}</strong>
+                <div className="follow-up-item-heading">
+                  <strong>{followUp.title}</strong>
+                  {followUp.context ? <span className="context-chip">{followUp.context}</span> : null}
+                </div>
                 <p>{followUp.dueLabel}</p>
               </div>
               <div className="follow-up-item-actions">
