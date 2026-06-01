@@ -67,6 +67,7 @@ function getEditStateFromFollowUp(followUp: FollowUp): FollowUpEditState {
     title: followUp.title,
     dueLabel: followUp.dueLabel,
     status: followUp.status,
+    context: followUp.context,
   }
 }
 
@@ -75,6 +76,7 @@ function getEmptyFollowUpEditState(): FollowUpEditState {
     title: '',
     dueLabel: '',
     status: 'due-today',
+    context: '',
   }
 }
 
@@ -83,6 +85,7 @@ function getEmptyFollowUpFormState(): FollowUpFormState {
     title: '',
     dueLabel: '',
     status: 'due-today',
+    context: '',
   }
 }
 
@@ -265,6 +268,7 @@ function App() {
         title: trimmedFollowUpTitle,
         dueLabel: trimmedFollowUpDueLabel || 'Schedule follow-up date',
         status: 'due-today',
+        context: 'Initial outreach',
       }
 
       setFollowUpItems((current) => [newFollowUp, ...current])
@@ -342,6 +346,7 @@ function App() {
               title: followUpEditState.title.trim() || 'Follow-up task',
               dueLabel: followUpEditState.dueLabel.trim() || 'Schedule follow-up date',
               status: followUpEditState.status,
+              context: followUpEditState.context.trim() || 'General follow-up',
             }
           : followUp,
       ),
@@ -376,6 +381,7 @@ function App() {
       dueLabel:
         followUpFormState.dueLabel.trim() || followUpSchedulePresets[followUpFormState.status],
       status: followUpFormState.status,
+      context: followUpFormState.context.trim() || 'General follow-up',
     }
 
     setFollowUpItems((current) => [newFollowUp, ...current])
