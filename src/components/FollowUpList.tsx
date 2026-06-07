@@ -7,6 +7,23 @@ import type {
   FollowUpStatus,
 } from '../types'
 import { followUpLabels } from '../constants'
+import { FollowUpPlannerCard } from './FollowUpPlannerCard'
+import { FollowUpCreateForm } from './FollowUpCreateForm'
+
+const filterTabs: { value: FollowUpFilter; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'all', label: 'All' },
+]
+
+const rescheduleOptions: {
+  status: Exclude<FollowUpStatus, 'completed'>
+  label: string
+}[] = [
+  { status: 'due-today', label: 'Today' },
+  { status: 'this-week', label: 'Week' },
+  { status: 'waiting', label: 'Waiting' },
+]
 
 type FollowUpListProps = {
   followUps: FollowUp[]
@@ -66,112 +83,27 @@ export function FollowUpList({
         <span>{followUps.length}</span>
       </div>
 
-      <div className="follow-up-planner-card">
-        <div>
-          <p className="section-label">Planning snapshot</p>
-          <h4>{nextOpenFollowUp ? nextOpenFollowUp.title : 'No open follow-up queued'}</h4>
-          <p className="planner-copy">
-            {nextOpenFollowUp
-              ? `${followUpLabels[nextOpenFollowUp.status]} · ${nextOpenFollowUp.dueLabel}${nextOpenFollowUp.context ? ` · ${nextOpenFollowUp.context}` : ''}`
-              : 'Everything for this application is currently completed.'}
-          </p>
-        </div>
-        <div className="planner-metrics" aria-label="Follow-up urgency summary">
-          <span className="planner-pill due-today">
-            Due today {followUps.filter((followUp) => followUp.status === 'due-today').length}
-          </span>
-          <span className="planner-pill this-week">
-            This week {followUps.filter((followUp) => followUp.status === 'this-week').length}
-          </span>
-          <span className="planner-pill waiting">
-            Waiting {followUps.filter((followUp) => followUp.status === 'waiting').length}
-          </span>
-        </div>
-      </div>
+      <FollowUpPlannerCard followUps={followUps} nextOpenFollowUp={nextOpenFollowUp} />
 
       <div className="follow-up-filter-bar" aria-label="Filter follow-ups by status">
-        {(
-          [
-            ['open', `Open ${followUpSummary.open}`],
-            ['completed', `Completed ${followUpSummary.completed}`],
-            ['all', `All ${followUpSummary.all}`],
-          ] as const
-        ).map(([value, label]) => (
+        {filterTabs.map(({ value, label }) => (
           <button
             key={value}
             type="button"
             className={`filter-chip ${followUpFilter === value ? 'active' : ''}`}
             onClick={() => onFilterChange(value)}
           >
-            {label}
+            {label} {followUpSummary[value]}
           </button>
         ))}
       </div>
 
-      <form className="follow-up-create-form" onSubmit={onCreateFollowUp}>
-        <div className="follow-up-preset-bar" aria-label="Apply a quick follow-up timing preset">
-          {(
-            [
-              ['due-today', 'Set for today'],
-              ['this-week', 'Plan this week'],
-              ['waiting', 'Mark as waiting'],
-            ] as const
-          ).map(([status, label]) => (
-            <button
-              key={status}
-              type="button"
-              className={`filter-chip ${followUpFormState.status === status ? 'active' : ''}`}
-              onClick={() => onApplyPreset(status)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="follow-up-create-fields">
-          <label>
-            Title
-            <input
-              value={followUpFormState.title}
-              onChange={(event) => onFormStateChange('title', event.target.value)}
-              placeholder="Send thank-you note"
-              required
-            />
-          </label>
-          <label>
-            Timing
-            <input
-              value={followUpFormState.dueLabel}
-              onChange={(event) => onFormStateChange('dueLabel', event.target.value)}
-              placeholder="Tomorrow · 10:00"
-            />
-          </label>
-          <label>
-            Status
-            <select
-              value={followUpFormState.status}
-              onChange={(event) =>
-                onFormStateChange('status', event.target.value as FollowUpFormState['status'])
-              }
-            >
-              <option value="due-today">Due today</option>
-              <option value="this-week">This week</option>
-              <option value="waiting">Waiting</option>
-            </select>
-          </label>
-          <label>
-            Context
-            <input
-              value={followUpFormState.context}
-              onChange={(event) => onFormStateChange('context', event.target.value)}
-              placeholder="Interview prep"
-            />
-          </label>
-        </div>
-        <button type="submit" className="primary-action">
-          Add follow-up
-        </button>
-      </form>
+      <FollowUpCreateForm
+        followUpFormState={followUpFormState}
+        onCreateFollowUp={onCreateFollowUp}
+        onFormStateChange={onFormStateChange}
+        onApplyPreset={onApplyPreset}
+      />
 
       {visibleFollowUps.length > 0 ? (
         visibleFollowUps.map((followUp) => {
@@ -249,13 +181,7 @@ export function FollowUpList({
                 </span>
                 {followUp.status !== 'completed' ? (
                   <div className="follow-up-quick-actions" aria-label="Quick reschedule follow-up">
-                    {(
-                      [
-                        ['due-today', 'Today'],
-                        ['this-week', 'Week'],
-                        ['waiting', 'Waiting'],
-                      ] as const
-                    ).map(([status, label]) => (
+                    {rescheduleOptions.map(({ status, label }) => (
                       <button
                         key={status}
                         type="button"
