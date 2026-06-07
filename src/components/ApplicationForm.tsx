@@ -1,19 +1,8 @@
 import type { FormEvent } from 'react'
-import type { ApplicationStage } from '../data'
+import type { ApplicationStage } from '../types'
+import type { ApplicationFormState } from '../types'
 
-export type ApplicationFormState = {
-  company: string
-  role: string
-  stage: ApplicationStage
-  location: string
-  salary: string
-  nextStep: string
-  contact: string
-  contactRole: string
-  notes: string
-  followUpTitle: string
-  followUpDueLabel: string
-}
+export type { ApplicationFormState }
 
 type ApplicationFormProps = {
   formState: ApplicationFormState
