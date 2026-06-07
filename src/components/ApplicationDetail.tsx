@@ -1,24 +1,10 @@
 import type { FormEvent } from 'react'
-import type { Application, ApplicationStage, FollowUp } from '../data'
+import type { Application, ApplicationStage, ApplicationEditState, FollowUp } from '../types'
+import type { FollowUpFilter, FollowUpEditState, FollowUpFormState } from '../types'
 import { Detail } from './Detail'
-import {
-  FollowUpList,
-  type FollowUpFilter,
-  type FollowUpEditState,
-  type FollowUpFormState,
-} from './FollowUpList'
+import { FollowUpList } from './FollowUpList'
 
-export type ApplicationEditState = {
-  company: string
-  role: string
-  stage: ApplicationStage
-  location: string
-  salary: string
-  nextStep: string
-  contact: string
-  contactRole: string
-  notes: string
-}
+export type { ApplicationEditState }
 
 type ApplicationDetailProps = {
   application: Application
@@ -58,7 +44,10 @@ type ApplicationDetailProps = {
   ) => void
   onCreateFollowUp: (event: FormEvent<HTMLFormElement>) => void
   onApplyFollowUpPreset: (status: FollowUpFormState['status']) => void
-  onRescheduleFollowUp: (followUpId: number, status: Exclude<FollowUp['status'], 'completed'>) => void
+  onRescheduleFollowUp: (
+    followUpId: number,
+    status: Exclude<FollowUp['status'], 'completed'>,
+  ) => void
   onToggleFollowUpCompletion: (followUp: FollowUp) => void
 }
 

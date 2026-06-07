@@ -1,28 +1,12 @@
 import type { FormEvent } from 'react'
-import type { FollowUp, FollowUpStatus } from '../data'
-
-export type FollowUpFilter = 'all' | 'open' | 'completed'
-
-export type FollowUpEditState = {
-  title: string
-  dueLabel: string
-  status: FollowUpStatus
-  context: string
-}
-
-export type FollowUpFormState = {
-  title: string
-  dueLabel: string
-  status: Exclude<FollowUpStatus, 'completed'>
-  context: string
-}
-
-const followUpLabels: Record<FollowUpStatus, string> = {
-  'due-today': 'Due today',
-  'this-week': 'This week',
-  waiting: 'Waiting',
-  completed: 'Completed',
-}
+import type {
+  FollowUp,
+  FollowUpFilter,
+  FollowUpEditState,
+  FollowUpFormState,
+  FollowUpStatus,
+} from '../types'
+import { followUpLabels } from '../constants'
 
 type FollowUpListProps = {
   followUps: FollowUp[]
@@ -253,7 +237,9 @@ export function FollowUpList({
               <div>
                 <div className="follow-up-item-heading">
                   <strong>{followUp.title}</strong>
-                  {followUp.context ? <span className="context-chip">{followUp.context}</span> : null}
+                  {followUp.context ? (
+                    <span className="context-chip">{followUp.context}</span>
+                  ) : null}
                 </div>
                 <p>{followUp.dueLabel}</p>
               </div>

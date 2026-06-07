@@ -1,4 +1,4 @@
-import type { Application, ApplicationStage } from '../data'
+import type { Application, ApplicationStage } from '../types'
 
 type ApplicationsByStage = {
   stage: ApplicationStage

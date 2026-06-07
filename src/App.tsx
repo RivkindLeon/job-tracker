@@ -3,19 +3,19 @@ import {
   applications as initialApplications,
   followUps as initialFollowUps,
   stages,
-  type Application,
-  type FollowUp,
-  type FollowUpStatus,
 } from './data'
+import type { Application, FollowUp, FollowUpStatus } from './types'
+import type {
+  ApplicationFormState,
+  ApplicationEditState,
+  FollowUpFilter,
+  FollowUpEditState,
+  FollowUpFormState,
+} from './types'
 import { Metric } from './components/Metric'
-import { ApplicationForm, type ApplicationFormState } from './components/ApplicationForm'
+import { ApplicationForm } from './components/ApplicationForm'
 import { ApplicationBoard } from './components/ApplicationBoard'
-import { ApplicationDetail, type ApplicationEditState } from './components/ApplicationDetail'
-import {
-  type FollowUpFilter,
-  type FollowUpEditState,
-  type FollowUpFormState,
-} from './components/FollowUpList'
+import { ApplicationDetail } from './components/ApplicationDetail'
 import { followUpSchedulePresets } from './constants'
 import { useFollowUpPriority } from './hooks/useFollowUpPriority'
 import './App.css'
