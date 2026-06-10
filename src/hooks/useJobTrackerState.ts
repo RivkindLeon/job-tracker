@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type {
-  Application,
   ApplicationEditState,
   ApplicationFormState,
   FollowUp,
@@ -9,74 +8,24 @@ import type {
   FollowUpFormState,
   FollowUpStatus,
 } from '../types'
-import { followUpSchedulePresets } from '../constants'
 import { applications as initialApplications, followUps as initialFollowUps } from '../data'
 import { useFollowUpPriority } from './useFollowUpPriority'
-
-const defaultFormState: ApplicationFormState = {
-  company: '',
-  role: '',
-  stage: 'Applied',
-  location: '',
-  salary: '',
-  nextStep: '',
-  contact: '',
-  contactRole: '',
-  notes: '',
-  followUpTitle: '',
-  followUpDueLabel: '',
-}
-
-function getEditStateFromApplication(application: Application): ApplicationEditState {
-  return {
-    company: application.company,
-    role: application.role,
-    stage: application.stage,
-    location: application.location,
-    salary: application.salary,
-    nextStep: application.nextStep,
-    contact: application.contact,
-    contactRole: application.contactRole,
-    notes: application.notes,
-  }
-}
-
-function getEmptyEditState(): ApplicationEditState {
-  return {
-    company: '',
-    role: '',
-    stage: 'Applied',
-    location: '',
-    salary: '',
-    nextStep: '',
-    contact: '',
-    contactRole: '',
-    notes: '',
-  }
-}
-
-function getEmptyFollowUpEditState(): FollowUpEditState {
-  return {
-    title: '',
-    dueLabel: '',
-    status: 'due-today',
-    context: '',
-  }
-}
-
-function getEmptyFollowUpFormState(): FollowUpFormState {
-  return {
-    title: '',
-    dueLabel: '',
-    status: 'due-today',
-    context: '',
-  }
-}
-
-function trimOrDefault(value: string, fallback: string): string {
-  const trimmed = value.trim()
-  return trimmed || fallback
-}
+import {
+  applyApplicationEdits,
+  applyFollowUpEdits,
+  buildApplicationFromForm,
+  buildFollowUpFromForm,
+  buildInitialFollowUpFromForm,
+  defaultFormState,
+  getEditStateFromApplication,
+  getEmptyEditState,
+  getEmptyFollowUpEditState,
+  getEmptyFollowUpFormState,
+  getFollowUpSchedulePreset,
+  getNextId,
+  rescheduleFollowUp,
+  toggleFollowUpCompletion,
+} from './jobTrackerStateHelpers'
 
 export function useJobTrackerState() {
   const [applicationItems, setApplicationItems] = useState(initialApplications)
@@ -184,45 +133,18 @@ export function useJobTrackerState() {
     setFollowUpFormState((current) => ({ ...current, [key]: value }))
   }
 
-  const getNextId = (items: { id: number }[]) =>
-    items.reduce((max, item) => Math.max(max, item.id), 0) + 1
-
   const handleCreateApplication = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const newId = getNextId(applicationItems)
-
-    const newApplication: Application = {
-      id: newId,
-      company: trimOrDefault(formState.company, ''),
-      role: trimOrDefault(formState.role, ''),
-      stage: formState.stage,
-      location: trimOrDefault(formState.location, 'Location to confirm'),
-      salary: trimOrDefault(formState.salary, 'Compensation not captured yet'),
-      appliedOn:
-        formState.stage === 'Wishlist' ? 'Not applied yet' : new Date().toISOString().slice(0, 10),
-      nextStep: trimOrDefault(formState.nextStep, 'Define the next step for this opportunity'),
-      resume: 'Resume to attach',
-      contact: trimOrDefault(formState.contact, 'Contact to add'),
-      contactRole: trimOrDefault(formState.contactRole, 'Role to confirm'),
-      notes: trimOrDefault(formState.notes, 'No notes added yet.'),
-    }
+    const newApplication = buildApplicationFromForm(formState, newId)
 
     setApplicationItems((current) => [newApplication, ...current])
     setSelectedApplicationId(newId)
 
-    const trimmedFollowUpTitle = formState.followUpTitle.trim()
-    if (trimmedFollowUpTitle) {
-      const newFollowUpId = getNextId(followUpItems)
-      const newFollowUp: FollowUp = {
-        id: newFollowUpId,
-        applicationId: newId,
-        title: trimmedFollowUpTitle,
-        dueLabel: trimOrDefault(formState.followUpDueLabel, 'Schedule follow-up date'),
-        status: 'due-today',
-        context: 'Initial outreach',
-      }
-      setFollowUpItems((current) => [newFollowUp, ...current])
+    const initialFollowUp = buildInitialFollowUpFromForm(formState, newId, getNextId(followUpItems))
+    if (initialFollowUp) {
+      setFollowUpItems((current) => [initialFollowUp, ...current])
     }
 
     setFormState(defaultFormState)
@@ -236,27 +158,7 @@ export function useJobTrackerState() {
       current.map((application) => {
         if (application.id !== selectedApplication.id) return application
 
-        const nextStage = editState.stage
-        const nextAppliedOn =
-          application.appliedOn === 'Not applied yet' && nextStage !== 'Wishlist'
-            ? new Date().toISOString().slice(0, 10)
-            : application.appliedOn !== 'Not applied yet' && nextStage === 'Wishlist'
-              ? 'Not applied yet'
-              : application.appliedOn
-
-        return {
-          ...application,
-          company: trimOrDefault(editState.company, ''),
-          role: trimOrDefault(editState.role, ''),
-          stage: nextStage,
-          location: trimOrDefault(editState.location, 'Location to confirm'),
-          salary: trimOrDefault(editState.salary, 'Compensation not captured yet'),
-          appliedOn: nextAppliedOn,
-          nextStep: trimOrDefault(editState.nextStep, 'Define the next step for this opportunity'),
-          contact: trimOrDefault(editState.contact, 'Contact to add'),
-          contactRole: trimOrDefault(editState.contactRole, 'Role to confirm'),
-          notes: trimOrDefault(editState.notes, 'No notes added yet.'),
-        }
+        return applyApplicationEdits(application, editState)
       }),
     )
     setIsEditingSelectedApplication(false)
@@ -285,13 +187,7 @@ export function useJobTrackerState() {
     setFollowUpItems((current) =>
       current.map((followUp) =>
         followUp.id === editingFollowUp.id
-          ? {
-              ...followUp,
-              title: trimOrDefault(followUpEditState.title, 'Follow-up task'),
-              dueLabel: trimOrDefault(followUpEditState.dueLabel, 'Schedule follow-up date'),
-              status: followUpEditState.status,
-              context: trimOrDefault(followUpEditState.context, 'General follow-up'),
-            }
+          ? applyFollowUpEdits(followUp, followUpEditState)
           : followUp,
       ),
     )
@@ -314,17 +210,11 @@ export function useJobTrackerState() {
     event.preventDefault()
     if (!selectedApplication) return
 
-    const newFollowUp: FollowUp = {
-      id: getNextId(followUpItems),
-      applicationId: selectedApplication.id,
-      title: trimOrDefault(followUpFormState.title, 'Follow-up task'),
-      dueLabel: trimOrDefault(
-        followUpFormState.dueLabel,
-        followUpSchedulePresets[followUpFormState.status],
-      ),
-      status: followUpFormState.status,
-      context: trimOrDefault(followUpFormState.context, 'General follow-up'),
-    }
+    const newFollowUp = buildFollowUpFromForm(
+      followUpFormState,
+      selectedApplication.id,
+      getNextId(followUpItems),
+    )
 
     setFollowUpItems((current) => [newFollowUp, ...current])
     setFollowUpFormState(getEmptyFollowUpFormState())
@@ -334,7 +224,7 @@ export function useJobTrackerState() {
     setFollowUpFormState((current) => ({
       ...current,
       status,
-      dueLabel: followUpSchedulePresets[status],
+      dueLabel: getFollowUpSchedulePreset(status),
     }))
   }
 
@@ -343,11 +233,7 @@ export function useJobTrackerState() {
     status: Exclude<FollowUpStatus, 'completed'>,
   ) => {
     setFollowUpItems((current) =>
-      current.map((item) =>
-        item.id === followUpId
-          ? { ...item, status, dueLabel: followUpSchedulePresets[status] }
-          : item,
-      ),
+      current.map((item) => (item.id === followUpId ? rescheduleFollowUp(item, status) : item)),
     )
   }
 
@@ -355,18 +241,7 @@ export function useJobTrackerState() {
     setFollowUpItems((current) =>
       current.map((item) => {
         if (item.id !== followUp.id) return item
-        const isCompleted = item.status === 'completed'
-        return {
-          ...item,
-          status: isCompleted ? 'due-today' : 'completed',
-          dueLabel: isCompleted
-            ? item.dueLabel.startsWith('Completed')
-              ? 'Schedule follow-up date'
-              : item.dueLabel
-            : item.dueLabel.startsWith('Completed')
-              ? item.dueLabel
-              : `Completed · ${new Date().toISOString().slice(0, 10)}`,
-        }
+        return toggleFollowUpCompletion(item)
       }),
     )
   }
