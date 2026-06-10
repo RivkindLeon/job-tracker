@@ -16,9 +16,16 @@ React + TypeScript + Vite app shell with mock application, pipeline, and follow-
 ```bash
 npm install
 npm run lint
+npm run test:run
 npm run build
 npm run dev
 ```
+
+## Validation
+- `npm run lint` checks TypeScript/React code style
+- `npm run test:run` covers the extracted follow-up prioritization and state helper logic
+- `npm run format:check` verifies Prettier formatting
+- GitHub Actions now runs lint, tests, formatting, and build checks for pull requests and `main`
 
 ## Repository visibility
 This repository is public.
