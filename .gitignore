@@ -9,3 +9,8 @@ coverage/
 .vscode/
 .idea/
 *.log
+
+# Go backend
+server/job-tracker.db
+server/bin/
+*.exe
