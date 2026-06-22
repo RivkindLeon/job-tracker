@@ -40,9 +40,12 @@ Set the `DATA_DIR` environment variable to specify a different location.
 
 ### Follow-ups
 
-| Method | Endpoint                             | Description                       |
-|--------|--------------------------------------|-----------------------------------|
-| GET    | `/api/followups/{applicationId}`     | List follow-ups for an application |
+| Method | Endpoint                                     | Description                                 |
+|--------|----------------------------------------------|---------------------------------------------|
+| GET    | `/api/followups/{applicationId}`             | List follow-ups for an application          |
+| POST   | `/api/followups/{applicationId}`             | Create a follow-up for an application       |
+| PUT    | `/api/followups/{applicationId}/{followUpId}`| Update a follow-up                          |
+| DELETE | `/api/followups/{applicationId}/{followUpId}`| Delete a follow-up                          |
 
 ## Example Usage
 
@@ -80,6 +83,29 @@ curl -X DELETE http://localhost:8080/api/applications/1
 
 # List follow-ups for an application
 curl http://localhost:8080/api/followups/1
+
+# Create a follow-up for an application
+curl -X POST http://localhost:8080/api/followups/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Send thank-you note",
+    "dueLabel": "Tomorrow morning",
+    "status": "this-week",
+    "context": "Post-interview follow-up"
+  }'
+
+# Update a follow-up
+curl -X PUT http://localhost:8080/api/followups/1/2 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Send thank-you note",
+    "dueLabel": "Completed yesterday",
+    "status": "completed",
+    "context": "Post-interview follow-up"
+  }'
+
+# Delete a follow-up
+curl -X DELETE http://localhost:8080/api/followups/1/2
 ```
 
 ## Seed Data

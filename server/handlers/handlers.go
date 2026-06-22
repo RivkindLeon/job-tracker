@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -228,11 +229,37 @@ func NewFollowUpHandler(database *db.DB) *FollowUpHandler {
 	return &FollowUpHandler{db: database}
 }
 
+// extractAppID extracts the application ID from the follow-ups URL path.
+func extractAppID(path string) (int, error) {
+	parts := strings.Split(strings.TrimPrefix(path, "/api/followups/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		return 0, fmt.Errorf("missing application ID")
+	}
+	return strconv.Atoi(parts[0])
+}
+
+// extractFollowUpID extracts a follow-up ID from the URL path /api/followups/{applicationId}/{followUpId}.
+// Returns the application ID, follow-up ID, or an error.
+func extractFollowUpID(path string) (appID, followUpID int, err error) {
+	parts := strings.Split(strings.TrimPrefix(path, "/api/followups/"), "/")
+	if len(parts) < 2 || parts[1] == "" {
+		return 0, 0, fmt.Errorf("missing follow-up ID")
+	}
+	appID, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+	followUpID, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+	return appID, followUpID, nil
+}
+
 // ListFollowUps handles GET /api/followups/{applicationId}
 func (h *FollowUpHandler) ListFollowUps(w http.ResponseWriter, r *http.Request) {
-	// Path: /api/followups/{applicationId}
-	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/followups/"), "/")
-	if len(parts) == 0 || parts[0] == "" {
+	appID, err := extractAppID(r.URL.Path)
+	if err != nil {
 		http.Error(w, "Missing application ID", http.StatusBadRequest)
 		return
 	}
@@ -276,6 +303,135 @@ func (h *FollowUpHandler) ListFollowUps(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, fups)
+}
+
+// CreateFollowUp handles POST /api/followups/{applicationId}
+func (h *FollowUpHandler) CreateFollowUp(w http.ResponseWriter, r *http.Request) {
+	appID, err := extractAppID(r.URL.Path)
+	if err != nil {
+		http.Error(w, "Missing application ID", http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		Title    string `json:"title"`
+		DueLabel string `json:"dueLabel"`
+		Status   string `json:"status"`
+		Context  string `json:"context"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	if input.Title == "" {
+		http.Error(w, "title is required", http.StatusBadRequest)
+		return
+	}
+	if input.Status == "" {
+		input.Status = "waiting"
+	}
+
+	// Verify the application exists
+	var exists bool
+	err = h.db.QueryRow("SELECT EXISTS(SELECT 1 FROM applications WHERE id = ?)", appID).Scan(&exists)
+	if err != nil || !exists {
+		http.Error(w, "Application not found", http.StatusNotFound)
+		return
+	}
+
+	res, err := h.db.Exec(`
+		INSERT INTO follow_ups(application_id, title, due_label, status, context)
+		VALUES(?,?,?,?,?)
+	`, appID, input.Title, input.DueLabel, input.Status, input.Context)
+	if err != nil {
+		log.Printf("create followup: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	newID, _ := res.LastInsertId()
+
+	var f models.FollowUp
+	h.db.QueryRow(`
+		SELECT id, application_id, title, due_label, status, context
+		FROM follow_ups WHERE id = ?
+	`, newID).Scan(&f.ID, &f.ApplicationID, &f.Title, &f.DueLabel, &f.Status, &f.Context)
+
+	writeJSON(w, http.StatusCreated, f)
+}
+
+// UpdateFollowUp handles PUT /api/followups/{applicationId}/{followUpId}
+func (h *FollowUpHandler) UpdateFollowUp(w http.ResponseWriter, r *http.Request) {
+	appID, followUpID, err := extractFollowUpID(r.URL.Path)
+	if err != nil {
+		http.Error(w, "Invalid follow-up ID", http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		Title    string `json:"title"`
+		DueLabel string `json:"dueLabel"`
+		Status   string `json:"status"`
+		Context  string `json:"context"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	if input.Title == "" {
+		http.Error(w, "title is required", http.StatusBadRequest)
+		return
+	}
+
+	res, err := h.db.Exec(`
+		UPDATE follow_ups SET title=?, due_label=?, status=?, context=?
+		WHERE id=? AND application_id=?
+	`, input.Title, input.DueLabel, input.Status, input.Context, followUpID, appID)
+	if err != nil {
+		log.Printf("update followup: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		http.Error(w, "Follow-up not found", http.StatusNotFound)
+		return
+	}
+
+	var f models.FollowUp
+	h.db.QueryRow(`
+		SELECT id, application_id, title, due_label, status, context
+		FROM follow_ups WHERE id = ?
+	`, followUpID).Scan(&f.ID, &f.ApplicationID, &f.Title, &f.DueLabel, &f.Status, &f.Context)
+
+	writeJSON(w, http.StatusOK, f)
+}
+
+// DeleteFollowUp handles DELETE /api/followups/{applicationId}/{followUpId}
+func (h *FollowUpHandler) DeleteFollowUp(w http.ResponseWriter, r *http.Request) {
+	appID, followUpID, err := extractFollowUpID(r.URL.Path)
+	if err != nil {
+		http.Error(w, "Invalid follow-up ID", http.StatusBadRequest)
+		return
+	}
+
+	res, err := h.db.Exec("DELETE FROM follow_ups WHERE id=? AND application_id=?", followUpID, appID)
+	if err != nil {
+		log.Printf("delete followup: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		http.Error(w, "Follow-up not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // --- helpers ---
