@@ -66,11 +66,18 @@ func main() {
 
 	// Follow-up routes
 	mux.HandleFunc("/api/followups/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
+			followUpHandler.ListFollowUps(w, r)
+		case http.MethodPost:
+			followUpHandler.CreateFollowUp(w, r)
+		case http.MethodPut:
+			followUpHandler.UpdateFollowUp(w, r)
+		case http.MethodDelete:
+			followUpHandler.DeleteFollowUp(w, r)
+		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
 		}
-		followUpHandler.ListFollowUps(w, r)
 	})
 
 	// CORS middleware wrapper
