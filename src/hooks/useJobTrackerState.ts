@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type {
   ApplicationEditState,
   ApplicationFormState,
@@ -26,6 +26,12 @@ import {
   rescheduleFollowUp,
   toggleFollowUpCompletion,
 } from './jobTrackerStateHelpers'
+import {
+  createFollowUp as apiCreateFollowUp,
+  fetchFollowUps as apiFetchFollowUps,
+  updateFollowUp as apiUpdateFollowUp,
+  checkApiHealth,
+} from '../api'
 
 export function useJobTrackerState() {
   const [applicationItems, setApplicationItems] = useState(initialApplications)
@@ -46,6 +52,19 @@ export function useJobTrackerState() {
   const [followUpFormState, setFollowUpFormState] =
     useState<FollowUpFormState>(getEmptyFollowUpFormState)
   const [followUpFilter, setFollowUpFilter] = useState<FollowUpFilter>('open')
+  const [apiAvailable, setApiAvailable] = useState(false)
+  const [apiLoading, setApiLoading] = useState(false)
+
+  // Check backend health once on mount
+  useEffect(() => {
+    let cancelled = false
+    checkApiHealth().then((ok) => {
+      if (!cancelled) setApiAvailable(ok)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const selectedApplication =
     applicationItems.find((application) => application.id === selectedApplicationId) ??
@@ -67,6 +86,44 @@ export function useJobTrackerState() {
     setFollowUpEditState(getEmptyFollowUpEditState())
     setFollowUpFormState(getEmptyFollowUpFormState())
   }, [selectedApplication])
+
+  // Fetch follow-ups from the backend when the selected application changes
+  const lastFetchedAppRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!apiAvailable || !selectedApplication) return
+    if (lastFetchedAppRef.current === selectedApplication.id) return
+
+    lastFetchedAppRef.current = selectedApplication.id
+    setApiLoading(true)
+
+    apiFetchFollowUps(selectedApplication.id)
+      .then((apiFollowUps) => {
+        setFollowUpItems((current) => {
+          const other = current.filter((f) => f.applicationId !== selectedApplication.id)
+          const mapped = apiFollowUps.map((af) => ({
+            id: af.id,
+            applicationId: af.applicationId,
+            title: af.title,
+            dueLabel: af.dueLabel,
+            status: af.status as FollowUpStatus,
+            context: af.context,
+          }))
+          const priorityOrder: Record<string, number> = {
+            'due-today': 0,
+            'this-week': 1,
+            waiting: 2,
+            completed: 3,
+          }
+          mapped.sort((a, b) => priorityOrder[a.status] - priorityOrder[b.status])
+          return [...other, ...mapped]
+        })
+      })
+      .catch(() => {
+        lastFetchedAppRef.current = null
+      })
+      .finally(() => setApiLoading(false))
+  }, [apiAvailable, selectedApplication])
 
   const selectedFollowUps = followUpItems.filter(
     (followUp) => followUp.applicationId === selectedApplication?.id,
@@ -180,20 +237,37 @@ export function useJobTrackerState() {
     })
   }
 
-  const handleSaveFollowUpEdits = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!editingFollowUp) return
+  const handleSaveFollowUpEdits = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (!editingFollowUp) return
 
-    setFollowUpItems((current) =>
-      current.map((followUp) =>
-        followUp.id === editingFollowUp.id
-          ? applyFollowUpEdits(followUp, followUpEditState)
-          : followUp,
-      ),
-    )
-    setEditingFollowUpId(null)
-    setFollowUpEditState(getEmptyFollowUpEditState())
-  }
+      const updated = applyFollowUpEdits(editingFollowUp, followUpEditState)
+
+      // Optimistic local update
+      setFollowUpItems((current) =>
+        current.map((followUp) => (followUp.id === editingFollowUp.id ? updated : followUp)),
+      )
+      setEditingFollowUpId(null)
+      setFollowUpEditState(getEmptyFollowUpEditState())
+
+      // Persist to backend (fire-and-forget; failure falls back to local state)
+      if (apiAvailable) {
+        apiUpdateFollowUp(updated.applicationId, updated.id, {
+          title: updated.title,
+          dueLabel: updated.dueLabel,
+          status: updated.status,
+          context: updated.context,
+        }).catch(() => {
+          // Revert on failure
+          setFollowUpItems((current) =>
+            current.map((f) => (f.id === editingFollowUp.id ? editingFollowUp : f)),
+          )
+        })
+      }
+    },
+    [editingFollowUp, followUpEditState, apiAvailable],
+  )
 
   const handleCancelFollowUpEdits = () => {
     if (!editingFollowUp) return
@@ -206,19 +280,47 @@ export function useJobTrackerState() {
     setEditingFollowUpId(null)
   }
 
-  const handleCreateFollowUp = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!selectedApplication) return
+  const handleCreateFollowUp = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      if (!selectedApplication) return
 
-    const newFollowUp = buildFollowUpFromForm(
-      followUpFormState,
-      selectedApplication.id,
-      getNextId(followUpItems),
-    )
+      const newFollowUp = buildFollowUpFromForm(
+        followUpFormState,
+        selectedApplication.id,
+        getNextId(followUpItems),
+      )
 
-    setFollowUpItems((current) => [newFollowUp, ...current])
-    setFollowUpFormState(getEmptyFollowUpFormState())
-  }
+      // Optimistic local update
+      setFollowUpItems((current) => [newFollowUp, ...current])
+      setFollowUpFormState(getEmptyFollowUpFormState())
+
+      // Persist to backend
+      if (apiAvailable) {
+        apiCreateFollowUp(selectedApplication.id, {
+          title: newFollowUp.title,
+          dueLabel: newFollowUp.dueLabel,
+          status: newFollowUp.status,
+          context: newFollowUp.context,
+        })
+          .then((created) => {
+            // Replace optimistic ID with server-assigned ID
+            setFollowUpItems((current) =>
+              current.map((f) =>
+                f.id === newFollowUp.id && f.applicationId === selectedApplication.id
+                  ? { ...f, id: created.id }
+                  : f,
+              ),
+            )
+          })
+          .catch(() => {
+            // Revert on failure
+            setFollowUpItems((current) => current.filter((f) => f.id !== newFollowUp.id))
+          })
+      }
+    },
+    [selectedApplication, followUpFormState, followUpItems, apiAvailable],
+  )
 
   const handleApplyFollowUpPreset = (status: FollowUpFormState['status']) => {
     setFollowUpFormState((current) => ({
@@ -228,23 +330,56 @@ export function useJobTrackerState() {
     }))
   }
 
-  const handleRescheduleFollowUp = (
-    followUpId: number,
-    status: Exclude<FollowUpStatus, 'completed'>,
-  ) => {
-    setFollowUpItems((current) =>
-      current.map((item) => (item.id === followUpId ? rescheduleFollowUp(item, status) : item)),
-    )
-  }
+  const handleRescheduleFollowUp = useCallback(
+    (followUpId: number, status: Exclude<FollowUpStatus, 'completed'>) => {
+      const original = followUpItems.find((f) => f.id === followUpId)
 
-  const handleToggleFollowUpCompletion = (followUp: FollowUp) => {
-    setFollowUpItems((current) =>
-      current.map((item) => {
-        if (item.id !== followUp.id) return item
-        return toggleFollowUpCompletion(item)
-      }),
-    )
-  }
+      // Optimistic local update
+      setFollowUpItems((current) =>
+        current.map((item) => (item.id === followUpId ? rescheduleFollowUp(item, status) : item)),
+      )
+
+      // Persist to backend
+      if (apiAvailable && original) {
+        const rescheduled = rescheduleFollowUp(original, status)
+        apiUpdateFollowUp(rescheduled.applicationId, rescheduled.id, {
+          title: rescheduled.title,
+          dueLabel: rescheduled.dueLabel,
+          status: rescheduled.status,
+          context: rescheduled.context,
+        }).catch(() => {
+          // Revert on failure
+          setFollowUpItems((current) => current.map((f) => (f.id === followUpId ? original : f)))
+        })
+      }
+    },
+    [followUpItems, apiAvailable],
+  )
+
+  const handleToggleFollowUpCompletion = useCallback(
+    (followUp: FollowUp) => {
+      const toggled = toggleFollowUpCompletion(followUp)
+
+      // Optimistic local update
+      setFollowUpItems((current) =>
+        current.map((item) => (item.id === followUp.id ? toggled : item)),
+      )
+
+      // Persist to backend
+      if (apiAvailable) {
+        apiUpdateFollowUp(toggled.applicationId, toggled.id, {
+          title: toggled.title,
+          dueLabel: toggled.dueLabel,
+          status: toggled.status,
+          context: toggled.context,
+        }).catch(() => {
+          // Revert on failure
+          setFollowUpItems((current) => current.map((f) => (f.id === followUp.id ? followUp : f)))
+        })
+      }
+    },
+    [apiAvailable],
+  )
 
   const heroMetrics = useMemo(() => {
     const activeApplications = applicationItems.filter(
@@ -273,6 +408,8 @@ export function useJobTrackerState() {
     visibleFollowUps,
     nextOpenFollowUp,
     heroMetrics,
+    apiAvailable,
+    apiLoading,
     setSelectedApplicationId,
     setFormState,
     setIsEditingSelectedApplication,

@@ -21,10 +21,7 @@ class ApiError extends Error {
   }
 }
 
-async function request<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
@@ -77,7 +74,10 @@ export type ApiApplication = {
 /** True when the backend is reachable at the configured API_BASE. */
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/api/applications`, { method: 'HEAD', signal: AbortSignal.timeout(2000) })
+    const res = await fetch(`${API_BASE}/api/applications`, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(2000),
+    })
     return res.ok
   } catch {
     return false
@@ -117,10 +117,7 @@ export async function updateFollowUp(
 }
 
 /** DELETE /api/followups/{applicationId}/{followUpId} — delete a follow-up. */
-export async function deleteFollowUp(
-  applicationId: number,
-  followUpId: number,
-): Promise<void> {
+export async function deleteFollowUp(applicationId: number, followUpId: number): Promise<void> {
   return request<void>(`/api/followups/${applicationId}/${followUpId}`, {
     method: 'DELETE',
   })
