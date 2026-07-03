@@ -133,21 +133,19 @@ export async function fetchApplications(): Promise<ApiApplication[]> {
 }
 
 /** POST /api/applications — create a new application. */
-export async function createApplication(
-  data: {
-    company: string
-    role: string
-    stage: string
-    location: string
-    salary: string
-    appliedOn: string
-    nextStep: string
-    resume: string
-    contact: string
-    contactRole: string
-    notes: string
-  },
-): Promise<ApiApplication> {
+export async function createApplication(data: {
+  company: string
+  role: string
+  stage: string
+  location: string
+  salary: string
+  appliedOn: string
+  nextStep: string
+  resume: string
+  contact: string
+  contactRole: string
+  notes: string
+}): Promise<ApiApplication> {
   return request<ApiApplication>('/api/applications', {
     method: 'POST',
     body: JSON.stringify(data),
