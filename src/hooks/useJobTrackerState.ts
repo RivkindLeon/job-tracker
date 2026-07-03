@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type {
+  Application,
   ApplicationEditState,
   ApplicationFormState,
   FollowUp,
@@ -27,8 +28,12 @@ import {
   toggleFollowUpCompletion,
 } from './jobTrackerStateHelpers'
 import {
+  createApplication as apiCreateApplication,
   createFollowUp as apiCreateFollowUp,
+  deleteApplication as apiDeleteApplication,
+  fetchApplications as apiFetchApplications,
   fetchFollowUps as apiFetchFollowUps,
+  updateApplication as apiUpdateApplication,
   updateFollowUp as apiUpdateFollowUp,
   checkApiHealth,
 } from '../api'
@@ -55,12 +60,39 @@ export function useJobTrackerState() {
   const [apiAvailable, setApiAvailable] = useState(false)
   const [apiLoading, setApiLoading] = useState(false)
 
-  // Check backend health once on mount
+  // Check backend health and fetch applications on mount
   useEffect(() => {
     let cancelled = false
-    checkApiHealth().then((ok) => {
-      if (!cancelled) setApiAvailable(ok)
-    })
+    checkApiHealth()
+      .then((ok) => {
+        if (cancelled) return
+        setApiAvailable(ok)
+        if (ok) {
+          return apiFetchApplications()
+        }
+      })
+      .then((apiApps) => {
+        if (cancelled || !apiApps) return
+        const mapped = apiApps.map((a) => ({
+          id: a.id,
+          company: a.company,
+          role: a.role,
+          stage: a.stage as Application['stage'],
+          location: a.location,
+          salary: a.salary,
+          appliedOn: a.appliedOn,
+          nextStep: a.nextStep,
+          resume: a.resume,
+          contact: a.contact,
+          contactRole: a.contactRole,
+          notes: a.notes,
+        }))
+        setApplicationItems(mapped)
+        setSelectedApplicationId(mapped[0]?.id ?? 0)
+      })
+      .catch(() => {
+        // Backend unreachable — keep local mock data
+      })
     return () => {
       cancelled = true
     }
@@ -196,6 +228,7 @@ export function useJobTrackerState() {
     const newId = getNextId(applicationItems)
     const newApplication = buildApplicationFromForm(formState, newId)
 
+    // Optimistic local update
     setApplicationItems((current) => [newApplication, ...current])
     setSelectedApplicationId(newId)
 
@@ -205,21 +238,92 @@ export function useJobTrackerState() {
     }
 
     setFormState(defaultFormState)
+
+    // Persist to backend
+    if (apiAvailable) {
+      apiCreateApplication({
+        company: newApplication.company,
+        role: newApplication.role,
+        stage: newApplication.stage,
+        location: newApplication.location,
+        salary: newApplication.salary,
+        appliedOn: newApplication.appliedOn,
+        nextStep: newApplication.nextStep,
+        resume: newApplication.resume,
+        contact: newApplication.contact,
+        contactRole: newApplication.contactRole,
+        notes: newApplication.notes,
+      })
+        .then((created) => {
+          // Replace optimistic ID with server-assigned ID
+          setApplicationItems((current) =>
+            current.map((app) => (app.id === newApplication.id ? { ...app, id: created.id } : app)),
+          )
+          setSelectedApplicationId(created.id)
+        })
+        .catch(() => {
+          // Revert on failure
+          setApplicationItems((current) => current.filter((app) => app.id !== newId))
+          setSelectedApplicationId(applicationItems[0]?.id ?? 0)
+        })
+    }
   }
 
   const handleSaveApplicationEdits = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!selectedApplication) return
 
-    setApplicationItems((current) =>
-      current.map((application) => {
-        if (application.id !== selectedApplication.id) return application
+    const original = selectedApplication
+    const updated = applyApplicationEdits(original, editState)
 
-        return applyApplicationEdits(application, editState)
-      }),
-    )
+    // Optimistic local update
+    setApplicationItems((current) => current.map((app) => (app.id === original.id ? updated : app)))
     setIsEditingSelectedApplication(false)
+
+    // Persist to backend
+    if (apiAvailable) {
+      apiUpdateApplication(updated.id, {
+        company: updated.company,
+        role: updated.role,
+        stage: updated.stage,
+        location: updated.location,
+        salary: updated.salary,
+        appliedOn: updated.appliedOn,
+        nextStep: updated.nextStep,
+        resume: updated.resume,
+        contact: updated.contact,
+        contactRole: updated.contactRole,
+        notes: updated.notes,
+      }).catch(() => {
+        // Revert on failure
+        setApplicationItems((current) =>
+          current.map((app) => (app.id === original.id ? original : app)),
+        )
+      })
+    }
   }
+
+  const handleDeleteApplication = useCallback(() => {
+    if (!selectedApplication) return
+    const removed = selectedApplication
+
+    // Optimistic local removal
+    const newItems = applicationItems.filter((app) => app.id !== removed.id)
+    setApplicationItems(newItems)
+    setSelectedApplicationId(newItems[0]?.id ?? 0)
+    setIsEditingSelectedApplication(false)
+
+    // Persist to backend
+    if (apiAvailable) {
+      apiDeleteApplication(removed.id).catch(() => {
+        // Revert on failure
+        setApplicationItems((current) => {
+          if (current.find((app) => app.id === removed.id)) return current
+          return [...current, removed].sort((a, b) => a.id - b.id)
+        })
+      })
+    }
+  }, [selectedApplication, applicationItems, apiAvailable])
 
   const handleCancelEdits = () => {
     if (!selectedApplication) return
@@ -425,6 +529,7 @@ export function useJobTrackerState() {
     handleCreateApplication,
     handleSaveApplicationEdits,
     handleCancelEdits,
+    handleDeleteApplication,
     handleStartFollowUpEditing,
     handleSaveFollowUpEdits,
     handleCancelFollowUpEdits,

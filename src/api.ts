@@ -124,10 +124,60 @@ export async function deleteFollowUp(applicationId: number, followUpId: number):
 }
 
 /* ------------------------------------------------------------------ */
-/*  Application endpoints (read-only for now, expand as needed)        */
+/*  Application endpoints                                              */
 /* ------------------------------------------------------------------ */
 
 /** GET /api/applications — list all applications. */
 export async function fetchApplications(): Promise<ApiApplication[]> {
   return request<ApiApplication[]>('/api/applications')
+}
+
+/** POST /api/applications — create a new application. */
+export async function createApplication(data: {
+  company: string
+  role: string
+  stage: string
+  location: string
+  salary: string
+  appliedOn: string
+  nextStep: string
+  resume: string
+  contact: string
+  contactRole: string
+  notes: string
+}): Promise<ApiApplication> {
+  return request<ApiApplication>('/api/applications', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/** PUT /api/applications/{id} — update an existing application. */
+export async function updateApplication(
+  id: number,
+  data: {
+    company: string
+    role: string
+    stage: string
+    location: string
+    salary: string
+    appliedOn: string
+    nextStep: string
+    resume: string
+    contact: string
+    contactRole: string
+    notes: string
+  },
+): Promise<ApiApplication> {
+  return request<ApiApplication>(`/api/applications/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/** DELETE /api/applications/{id} — delete an application and its follow-ups (cascade). */
+export async function deleteApplication(id: number): Promise<void> {
+  return request<void>(`/api/applications/${id}`, {
+    method: 'DELETE',
+  })
 }

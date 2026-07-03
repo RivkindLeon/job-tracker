@@ -275,6 +275,16 @@ select {
   filter: brightness(1.05);
 }
 
+.secondary-action.danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.secondary-action.danger:hover {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .board-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

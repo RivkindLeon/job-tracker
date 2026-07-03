@@ -31,6 +31,7 @@ function App() {
     handleCreateApplication,
     handleSaveApplicationEdits,
     handleCancelEdits,
+    handleDeleteApplication,
     setIsEditingSelectedApplication,
     handleStartFollowUpEditing,
     handleSaveFollowUpEdits,
@@ -122,6 +123,7 @@ function App() {
               onApplyFollowUpPreset={handleApplyFollowUpPreset}
               onRescheduleFollowUp={handleRescheduleFollowUp}
               onToggleFollowUpCompletion={handleToggleFollowUpCompletion}
+              onDelete={handleDeleteApplication}
             />
           ) : (
             <p className="empty-state">Add your first application to start the board.</p>

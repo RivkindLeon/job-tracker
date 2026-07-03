@@ -49,6 +49,7 @@ type ApplicationDetailProps = {
     status: Exclude<FollowUp['status'], 'completed'>,
   ) => void
   onToggleFollowUpCompletion: (followUp: FollowUp) => void
+  onDelete?: () => void
 }
 
 export function ApplicationDetail({
@@ -78,6 +79,7 @@ export function ApplicationDetail({
   onApplyFollowUpPreset,
   onRescheduleFollowUp,
   onToggleFollowUpCompletion,
+  onDelete,
 }: ApplicationDetailProps) {
   return (
     <>
@@ -191,6 +193,19 @@ export function ApplicationDetail({
             <button type="button" className="secondary-action" onClick={onStartEdit}>
               Edit application
             </button>
+            {onDelete && (
+              <button
+                type="button"
+                className="secondary-action danger"
+                onClick={() => {
+                  if (window.confirm(`Delete application for ${application.company}?`)) {
+                    onDelete()
+                  }
+                }}
+              >
+                Delete application
+              </button>
+            )}
           </div>
 
           <dl className="detail-grid">
