@@ -264,12 +264,6 @@ func (h *FollowUpHandler) ListFollowUps(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	appID, err := strconv.Atoi(parts[0])
-	if err != nil {
-		http.Error(w, "Invalid application ID", http.StatusBadRequest)
-		return
-	}
-
 	rows, err := h.db.Query(`
 		SELECT id, application_id, title, due_label, status, context
 		FROM follow_ups
