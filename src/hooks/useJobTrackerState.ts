@@ -37,6 +37,7 @@ import {
   updateFollowUp as apiUpdateFollowUp,
   checkApiHealth,
 } from '../api'
+import { followUpStatusPriority } from '../constants'
 
 export function useJobTrackerState() {
   const [applicationItems, setApplicationItems] = useState(initialApplications)
@@ -141,13 +142,7 @@ export function useJobTrackerState() {
             status: af.status as FollowUpStatus,
             context: af.context,
           }))
-          const priorityOrder: Record<string, number> = {
-            'due-today': 0,
-            'this-week': 1,
-            waiting: 2,
-            completed: 3,
-          }
-          mapped.sort((a, b) => priorityOrder[a.status] - priorityOrder[b.status])
+          mapped.sort((a, b) => followUpStatusPriority[a.status] - followUpStatusPriority[b.status])
           return [...other, ...mapped]
         })
       })
