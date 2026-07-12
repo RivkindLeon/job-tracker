@@ -193,17 +193,21 @@ export function rescheduleFollowUp(
 }
 
 export function toggleFollowUpCompletion(followUp: FollowUp): FollowUp {
-  const isCompleted = followUp.status === 'completed'
+  // Reopen: reset to due-today with default placeholder
+  if (followUp.status === 'completed') {
+    return {
+      ...followUp,
+      status: 'due-today',
+      dueLabel: FALLBACK_PLACEHOLDERS.followUpDueLabel,
+    }
+  }
 
+  // Complete: mark as completed with today's timestamp
+  const withTimestamp = `Completed · ${new Date().toISOString().slice(0, 10)}`
   return {
     ...followUp,
-    status: isCompleted ? 'due-today' : 'completed',
-    dueLabel: isCompleted
-      ? followUp.dueLabel.startsWith('Completed')
-        ? FALLBACK_PLACEHOLDERS.followUpDueLabel
-        : followUp.dueLabel
-      : followUp.dueLabel.startsWith('Completed')
-        ? followUp.dueLabel
-        : `Completed · ${new Date().toISOString().slice(0, 10)}`,
+    status: 'completed',
+    // Preserve existing completion label if already set (defensive)
+    dueLabel: followUp.dueLabel.startsWith('Completed') ? followUp.dueLabel : withTimestamp,
   }
 }
