@@ -13,6 +13,29 @@ import (
 	"github.com/RivkindLeon/job-tracker/server/models"
 )
 
+// --- shared request input types ---
+
+type applicationInput struct {
+	Company     string `json:"company"`
+	Role        string `json:"role"`
+	Stage       string `json:"stage"`
+	Location    string `json:"location"`
+	Salary      string `json:"salary"`
+	AppliedOn   string `json:"appliedOn"`
+	NextStep    string `json:"nextStep"`
+	Resume      string `json:"resume"`
+	Contact     string `json:"contact"`
+	ContactRole string `json:"contactRole"`
+	Notes       string `json:"notes"`
+}
+
+type followUpInput struct {
+	Title    string `json:"title"`
+	DueLabel string `json:"dueLabel"`
+	Status   string `json:"status"`
+	Context  string `json:"context"`
+}
+
 // AppHandler handles application-related HTTP requests.
 type AppHandler struct {
 	db *db.DB
@@ -85,19 +108,7 @@ func (h *AppHandler) GetApplication(w http.ResponseWriter, r *http.Request) {
 
 // CreateApplication handles POST /api/applications
 func (h *AppHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Company     string `json:"company"`
-		Role        string `json:"role"`
-		Stage       string `json:"stage"`
-		Location    string `json:"location"`
-		Salary      string `json:"salary"`
-		AppliedOn   string `json:"appliedOn"`
-		NextStep    string `json:"nextStep"`
-		Resume      string `json:"resume"`
-		Contact     string `json:"contact"`
-		ContactRole string `json:"contactRole"`
-		Notes       string `json:"notes"`
-	}
+	var input applicationInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
@@ -146,19 +157,7 @@ func (h *AppHandler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input struct {
-		Company     string `json:"company"`
-		Role        string `json:"role"`
-		Stage       string `json:"stage"`
-		Location    string `json:"location"`
-		Salary      string `json:"salary"`
-		AppliedOn   string `json:"appliedOn"`
-		NextStep    string `json:"nextStep"`
-		Resume      string `json:"resume"`
-		Contact     string `json:"contact"`
-		ContactRole string `json:"contactRole"`
-		Notes       string `json:"notes"`
-	}
+	var input applicationInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
@@ -307,12 +306,7 @@ func (h *FollowUpHandler) CreateFollowUp(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var input struct {
-		Title    string `json:"title"`
-		DueLabel string `json:"dueLabel"`
-		Status   string `json:"status"`
-		Context  string `json:"context"`
-	}
+	var input followUpInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
@@ -363,12 +357,7 @@ func (h *FollowUpHandler) UpdateFollowUp(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var input struct {
-		Title    string `json:"title"`
-		DueLabel string `json:"dueLabel"`
-		Status   string `json:"status"`
-		Context  string `json:"context"`
-	}
+	var input followUpInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
