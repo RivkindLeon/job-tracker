@@ -25,6 +25,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(8000),
     ...options,
   })
 
@@ -76,7 +77,7 @@ export async function checkApiHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/api/applications`, {
       method: 'HEAD',
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(3000),
     })
     return res.ok
   } catch {
