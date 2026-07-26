@@ -75,18 +75,8 @@ export function useJobTrackerState() {
       .then((apiApps) => {
         if (cancelled || !apiApps) return
         const mapped = apiApps.map((a) => ({
-          id: a.id,
-          company: a.company,
-          role: a.role,
+          ...a,
           stage: a.stage as Application['stage'],
-          location: a.location,
-          salary: a.salary,
-          appliedOn: a.appliedOn,
-          nextStep: a.nextStep,
-          resume: a.resume,
-          contact: a.contact,
-          contactRole: a.contactRole,
-          notes: a.notes,
         }))
         setApplicationItems(mapped)
         setSelectedApplicationId(mapped[0]?.id ?? 0)
