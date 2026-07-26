@@ -117,13 +117,6 @@ export async function updateFollowUp(
   })
 }
 
-/** DELETE /api/followups/{applicationId}/{followUpId} — delete a follow-up. */
-export async function deleteFollowUp(applicationId: number, followUpId: number): Promise<void> {
-  return request<void>(`/api/followups/${applicationId}/${followUpId}`, {
-    method: 'DELETE',
-  })
-}
-
 /* ------------------------------------------------------------------ */
 /*  Application endpoints                                              */
 /* ------------------------------------------------------------------ */
