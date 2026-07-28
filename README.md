@@ -10,7 +10,7 @@ A public project for exploring a product that helps job seekers, especially soft
 Job searching often becomes fragmented across spreadsheets, email threads, CV versions, interview stages, and follow-up reminders.
 
 ## Current status
-React + TypeScript + Vite frontend with a Go + SQLite backend. Applications and follow-ups are managed through a REST API with local persistence.
+Full-stack MVP complete. React + TypeScript + Vite frontend connected to a Go + SQLite backend via REST API. All CRUD operations (create, update, delete, list) for applications and follow-ups go through the API with graceful fallback to mock data when the backend is unreachable.
 
 ## Local development
 
