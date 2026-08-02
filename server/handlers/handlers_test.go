@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -79,9 +80,10 @@ func TestGetApplication_AllSeededIDs(t *testing.T) {
 
 	mux := newTestMux(database)
 	for id := 1; id <= 5; id++ {
-		rr := request(t, mux, http.MethodGet, paths(id), "")
+		path := fmt.Sprintf("/api/applications/%d", id)
+		rr := request(t, mux, http.MethodGet, path, "")
 		if rr.Code != http.StatusOK {
-			t.Errorf("GET /api/applications/%d = %d, want 200", id, rr.Code)
+			t.Errorf("GET %s = %d, want 200", path, rr.Code)
 		}
 	}
 }
@@ -136,7 +138,7 @@ func TestCreateApplication_Success(t *testing.T) {
 	}
 
 	// Confirm it was persisted
-	getRR := request(t, mux, http.MethodGet, paths(app.ID), "")
+	getRR := request(t, mux, http.MethodGet, fmt.Sprintf("/api/applications/%d", app.ID), "")
 	if getRR.Code != http.StatusOK {
 		t.Errorf("re-fetch returned %d, want 200", getRR.Code)
 	}
@@ -565,24 +567,3 @@ func TestDeleteFollowUp_NotFound(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Helper
-// ---------------------------------------------------------------------------
-
-// paths constructs a GET-by-ID URL for the given application id.
-func paths(id int) string {
-	return "/api/applications/" + itoa(id)
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	s := ""
-	for n > 0 {
-		digit := n % 10
-		s = string(rune('0'+digit)) + s
-		n /= 10
-	}
-	return s
-}
