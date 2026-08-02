@@ -5,8 +5,6 @@ import { Detail } from './Detail'
 import { ApplicationEditForm } from './ApplicationEditForm'
 import { FollowUpList } from './FollowUpList'
 
-export type { ApplicationEditState }
-
 type ApplicationDetailProps = {
   application: Application
   stages: readonly ApplicationStage[]

@@ -68,6 +68,75 @@ export type ApiApplication = {
   notes: string
 }
 
+export type ApiApplicationInput = {
+  company: string
+  role: string
+  stage: string
+  location: string
+  salary: string
+  appliedOn: string
+  nextStep: string
+  resume: string
+  contact: string
+  contactRole: string
+  notes: string
+}
+
+export type ApiFollowUpInput = {
+  title: string
+  dueLabel: string
+  status: string
+  context: string
+}
+
+/**
+ * Map a local Application to the shape expected by the API.
+ */
+export function toApiApplicationInput(app: {
+  company: string
+  role: string
+  stage: string
+  location: string
+  salary: string
+  appliedOn: string
+  nextStep: string
+  resume: string
+  contact: string
+  contactRole: string
+  notes: string
+}): ApiApplicationInput {
+  return {
+    company: app.company,
+    role: app.role,
+    stage: app.stage,
+    location: app.location,
+    salary: app.salary,
+    appliedOn: app.appliedOn,
+    nextStep: app.nextStep,
+    resume: app.resume,
+    contact: app.contact,
+    contactRole: app.contactRole,
+    notes: app.notes,
+  }
+}
+
+/**
+ * Map a local FollowUp to the shape expected by the API.
+ */
+export function toApiFollowUpInput(fup: {
+  title: string
+  dueLabel: string
+  status: string
+  context: string
+}): ApiFollowUpInput {
+  return {
+    title: fup.title,
+    dueLabel: fup.dueLabel,
+    status: fup.status,
+    context: fup.context,
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Public helpers                                                     */
 /* ------------------------------------------------------------------ */
@@ -97,7 +166,7 @@ export async function fetchFollowUps(applicationId: number): Promise<ApiFollowUp
 /** POST /api/followups/{applicationId} — create a follow-up. */
 export async function createFollowUp(
   applicationId: number,
-  data: { title: string; dueLabel: string; status: string; context: string },
+  data: ApiFollowUpInput,
 ): Promise<ApiFollowUp> {
   return request<ApiFollowUp>(`/api/followups/${applicationId}`, {
     method: 'POST',
@@ -109,7 +178,7 @@ export async function createFollowUp(
 export async function updateFollowUp(
   applicationId: number,
   followUpId: number,
-  data: { title: string; dueLabel: string; status: string; context: string },
+  data: ApiFollowUpInput,
 ): Promise<ApiFollowUp> {
   return request<ApiFollowUp>(`/api/followups/${applicationId}/${followUpId}`, {
     method: 'PUT',
@@ -127,19 +196,7 @@ export async function fetchApplications(): Promise<ApiApplication[]> {
 }
 
 /** POST /api/applications — create a new application. */
-export async function createApplication(data: {
-  company: string
-  role: string
-  stage: string
-  location: string
-  salary: string
-  appliedOn: string
-  nextStep: string
-  resume: string
-  contact: string
-  contactRole: string
-  notes: string
-}): Promise<ApiApplication> {
+export async function createApplication(data: ApiApplicationInput): Promise<ApiApplication> {
   return request<ApiApplication>('/api/applications', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -149,19 +206,7 @@ export async function createApplication(data: {
 /** PUT /api/applications/{id} — update an existing application. */
 export async function updateApplication(
   id: number,
-  data: {
-    company: string
-    role: string
-    stage: string
-    location: string
-    salary: string
-    appliedOn: string
-    nextStep: string
-    resume: string
-    contact: string
-    contactRole: string
-    notes: string
-  },
+  data: ApiApplicationInput,
 ): Promise<ApiApplication> {
   return request<ApiApplication>(`/api/applications/${id}`, {
     method: 'PUT',
