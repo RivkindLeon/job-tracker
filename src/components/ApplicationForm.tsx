@@ -2,8 +2,6 @@ import type { FormEvent } from 'react'
 import type { ApplicationStage } from '../types'
 import type { ApplicationFormState } from '../types'
 
-export type { ApplicationFormState }
-
 type ApplicationFormProps = {
   formState: ApplicationFormState
   stages: readonly ApplicationStage[]

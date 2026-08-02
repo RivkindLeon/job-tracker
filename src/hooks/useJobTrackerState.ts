@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import type {
   Application,
   ApplicationEditState,
-  ApplicationFormState,
   FollowUp,
   FollowUpEditState,
   FollowUpFilter,
@@ -24,6 +23,7 @@ import {
   getEmptyFollowUpFormState,
   getFollowUpSchedulePreset,
   getNextId,
+  makeFieldUpdater,
   rescheduleFollowUp,
   toggleFollowUpCompletion,
 } from './jobTrackerStateHelpers'
@@ -178,36 +178,10 @@ export function useJobTrackerState() {
   const nextOpenFollowUp =
     sortedSelectedFollowUps.find((followUp) => followUp.status !== 'completed') ?? null
 
-  const handleFormChange = <Key extends keyof ApplicationFormState>(
-    key: Key,
-    value: ApplicationFormState[Key],
-  ) => {
-    setFormState((current) => ({ ...current, [key]: value }))
-  }
-
-  const handleEditStateChange = <Key extends keyof ApplicationEditState>(
-    key: Key,
-    value: ApplicationEditState[Key],
-  ) => {
-    setEditState((current) => ({ ...current, [key]: value }))
-  }
-
-  const handleFollowUpEditStateChange = <Key extends keyof FollowUpEditState>(
-    key: Key,
-    value: FollowUpEditState[Key],
-  ) => {
-    setFollowUpEditState((current) => ({
-      ...current,
-      [key]: value,
-    }))
-  }
-
-  const handleFollowUpFormStateChange = <Key extends keyof FollowUpFormState>(
-    key: Key,
-    value: FollowUpFormState[Key],
-  ) => {
-    setFollowUpFormState((current) => ({ ...current, [key]: value }))
-  }
+  const handleFormChange = makeFieldUpdater(setFormState)
+  const handleEditStateChange = makeFieldUpdater(setEditState)
+  const handleFollowUpEditStateChange = makeFieldUpdater(setFollowUpEditState)
+  const handleFollowUpFormStateChange = makeFieldUpdater(setFollowUpFormState)
 
   const handleCreateApplication = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()

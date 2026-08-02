@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { FALLBACK_PLACEHOLDERS, followUpSchedulePresets } from '../constants'
 import type {
   Application,
@@ -8,6 +9,19 @@ import type {
   FollowUpFormState,
   FollowUpStatus,
 } from '../types'
+
+/**
+ * Build a typed field-updater for a form/edit state object.
+ *
+ * Returns a function of the shape `(key, value) => void` that merges the
+ * given key into the current state — the standard controlled-form pattern
+ * used across the application's form and edit states.
+ */
+export function makeFieldUpdater<T extends object>(setState: Dispatch<SetStateAction<T>>) {
+  return <Key extends keyof T>(key: Key, value: T[Key]) => {
+    setState((current) => ({ ...current, [key]: value }))
+  }
+}
 
 export const defaultFormState: ApplicationFormState = {
   company: '',
