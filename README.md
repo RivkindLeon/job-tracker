@@ -76,3 +76,13 @@ This repository is public.
 - `docs/product-brief.md` - users, problems, v0 outcome, entities, and flow
 - `docs/roadmap.md` - phase-based next steps
 - `docs/scope.md` - current boundaries
+
+## Project Status: Archived
+
+This project has been archived as of 2026-08-20. All features are complete and functional. The MVP+ status has been confirmed.
+
+- ✅ Full-stack MVP complete
+- ✅ All CRUD operations functional
+- ✅ Tests passing
+- ✅ Documentation complete
+
