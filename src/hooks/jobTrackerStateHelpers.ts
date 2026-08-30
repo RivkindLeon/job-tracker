@@ -88,8 +88,19 @@ export function trimOrDefault(value: string, fallback: string): string {
   return trimmed || fallback
 }
 
-export function getNextId(items: { id: number }[]) {
-  return items.reduce((max, item) => Math.max(max, item.id), 0) + 1
+/**
+ * Execute an optimistic state update with automatic rollback on API failure.
+ */
+export function withOptimisticUpdate<T>(
+  setItems: Dispatch<SetStateAction<T[]>>,
+  optimisticUpdateFn: (current: T[]) => T[],
+  apiCall: () => Promise<unknown>,
+  rollbackFn: (current: T[]) => T[],
+) {
+  setItems(optimisticUpdateFn)
+  apiCall().catch(() => {
+    setItems(rollbackFn)
+  })
 }
 
 export function buildApplicationFromForm(
