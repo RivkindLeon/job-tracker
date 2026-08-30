@@ -88,6 +88,10 @@ export function trimOrDefault(value: string, fallback: string): string {
   return trimmed || fallback
 }
 
+export function getNextId(items: { id: number }[]) {
+  return items.reduce((max, item) => Math.max(max, item.id), 0) + 1
+}
+
 /**
  * Execute an optimistic state update with automatic rollback on API failure.
  */

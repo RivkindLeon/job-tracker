@@ -26,6 +26,7 @@ import {
   makeFieldUpdater,
   rescheduleFollowUp,
   toggleFollowUpCompletion,
+  withOptimisticUpdate,
 } from './jobTrackerStateHelpers'
 import {
   createApplication as apiCreateApplication,
@@ -225,18 +226,18 @@ export function useJobTrackerState() {
     const original = selectedApplication
     const updated = applyApplicationEdits(original, editState)
 
-    // Optimistic local update
-    setApplicationItems((current) => current.map((app) => (app.id === original.id ? updated : app)))
     setIsEditingSelectedApplication(false)
 
-    // Persist to backend
+    // Optimistic local update with backend persistence & rollback
     if (apiAvailable) {
-      apiUpdateApplication(updated.id, toApiApplicationInput(updated)).catch(() => {
-        // Revert on failure
-        setApplicationItems((current) =>
-          current.map((app) => (app.id === original.id ? original : app)),
-        )
-      })
+      withOptimisticUpdate(
+        setApplicationItems,
+        (current) => current.map((app) => (app.id === original.id ? updated : app)),
+        () => apiUpdateApplication(updated.id, toApiApplicationInput(updated)),
+        (current) => current.map((app) => (app.id === original.id ? original : app)),
+      )
+    } else {
+      setApplicationItems((current) => current.map((app) => (app.id === original.id ? updated : app)))
     }
   }
 
